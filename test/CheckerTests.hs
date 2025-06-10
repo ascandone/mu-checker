@@ -78,9 +78,9 @@ tests =
       , interpret = [("x", ["b"])]
       }
   , CheckerTestCase
-      { label = "x U y fails when x stop being true before y is true"
+      { label = "x U y fails when x stops being true before y is true"
       , formula = "x" `Until` "y" -- a(x) -> b() -> c(y)
-      , expected = Falsify ["a", "b", "b"] -- TODO fix counterexample
+      , expected = Falsify ["a"]
       , initial = ["a"]
       , transitions =
           [ ("a", ["b"])
@@ -103,6 +103,94 @@ tests =
       , interpret =
           [ ("x", ["a", "b"])
           , ("y", ["c"])
+          ]
+      }
+  , CheckerTestCase
+      { label = "Until succeeds if there are no successors"
+      , formula = "x" `Until` "y"
+      , expected = Falsify ["a"]
+      , initial = ["a"]
+      , transitions =
+          []
+      , interpret =
+          [ ("x", ["a"])
+          ]
+      }
+  , CheckerTestCase
+      { label = "Until fails if y never holds"
+      , formula = "x" `Until` "y" -- a(x) -> b(x) -> c(x)
+      , expected = Falsify ["a"]
+      , initial = ["a"]
+      , transitions =
+          [ ("a", ["b"])
+          , ("b", ["c"])
+          ]
+      , interpret =
+          [ ("x", ["a", "b", "c"])
+          ]
+      }
+  , CheckerTestCase
+      { label = "finally succeds if the property is reached at a certain point"
+      , formula = LTL.finally "x" -- a -> b -> c(x)
+      , expected = Verify
+      , initial = ["a"]
+      , transitions =
+          [ ("a", ["b"])
+          , ("b", ["c"])
+          ]
+      , interpret =
+          [ ("x", ["c"])
+          ]
+      }
+  , CheckerTestCase
+      { label = "finally fails if the property is never reached"
+      , formula = LTL.finally "x" -- a -> b -> c
+      , expected = Falsify ["a"]
+      , initial = ["a"]
+      , transitions =
+          [ ("a", ["b"])
+          , ("b", ["c"])
+          ]
+      , interpret =
+          []
+      }
+  , CheckerTestCase
+      { label = "G x works if all states have x"
+      , formula = LTL.globally "x" -- a(x) -> b(x) -> c(x)
+      , expected = Verify
+      , initial = ["a"]
+      , transitions =
+          [ ("a", ["b"])
+          , ("b", ["c"])
+          ]
+      , interpret =
+          [ ("x", ["a", "b", "c"])
+          ]
+      }
+  , CheckerTestCase
+      { label = "F x does not work if no state have x, and there's a loop"
+      , formula = LTL.finally "x" -- a -> b -> c
+      , expected = Falsify ["a"]
+      , initial = ["a"]
+      , transitions =
+          [ ("a", ["b"])
+          , ("b", ["c"])
+          , ("c", ["a"])
+          ]
+      , interpret = []
+      }
+  , CheckerTestCase
+      { label = "G x works if all states have x, and there's a loop"
+      , formula = LTL.globally "x" -- a(x) -> b(x) -> c(x)
+      , expected = Verify
+      , initial = ["a"]
+      , transitions =
+          [ ("a", ["b"])
+          , ("b", ["c"])
+          , ("c", ["a"])
+          ]
+      , interpret =
+          [ ("x", ["a", "b", "c"])
           ]
       }
   ]
