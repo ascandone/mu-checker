@@ -68,6 +68,16 @@ tests =
       , interpret = [("x", ["b"])]
       }
   , CheckerTestCase
+      { label = "unwrap the double Not"
+      , formula = Not $ Not $ Next "x"
+      , expected = Falsify ["a", "does_not_sat_x"]
+      , initial = ["a"]
+      , transitions =
+          [ ("a", ["b", "does_not_sat_x"])
+          ]
+      , interpret = [("x", ["b"])]
+      }
+  , CheckerTestCase
       { label = "x U y fails when x stop being true before y is true"
       , formula = "x" `Until` "y" -- a(x) -> b() -> c(y)
       , expected = Falsify ["a", "b", "b"] -- TODO fix counterexample

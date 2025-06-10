@@ -36,6 +36,7 @@ data VerificationResult state
 
 -- TODO fix looping
 verifyAt :: (Eq state, Ord state) => KripkeState state Text -> LTL.Formula -> VerificationResult state
+verifyAt k (LTL.Not (LTL.Not f)) = verifyAt k f
 verifyAt k formula = appendK $ case formula of
   LTL.Bottom -> vbool False
   LTL.And fl fr -> kVerify fl `vand` kVerify fr
