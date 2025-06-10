@@ -59,7 +59,9 @@ library
 
     -- Modules exported by the library.
     exposed-modules:
-        LTL.Formula
+        Kripke,
+        LTL.Formula,
+        LTL.Checker,
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -124,11 +126,14 @@ test-suite test
 
     -- The entrypoint to the test suite.
     main-is:          Main.hs
+    other-modules:
+        CheckerTests,
 
     -- Test dependencies.
     build-depends:
         ltl-checker,
         base ^>=4.17.2.1,
         containers >= 0.6.7 && < 0.7,
+        text >= 2.0.2 && < 2.1,
         tasty ^>=1.5,
         tasty-hunit ^>=0.10,

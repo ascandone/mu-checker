@@ -1,5 +1,6 @@
 module Main (main) where
 
+import qualified CheckerTests
 import Test.Tasty (TestTree, defaultMain, testGroup)
 
 main :: IO ()
@@ -9,4 +10,5 @@ tests :: TestTree
 tests =
   testGroup
     "Tests"
-    []
+    [ CheckerTests.suite
+    ]

@@ -7,7 +7,9 @@ module LTL.Formula (
   imply,
 ) where
 
+import qualified Data.String
 import Data.Text (Text)
+import qualified Data.Text as Test
 
 data Formula
   = Bottom
@@ -32,3 +34,6 @@ globally f = Not (finally (Not f))
 
 imply :: Formula -> Formula -> Formula
 imply if_ then_ = Not if_ `lor` then_
+
+instance Data.String.IsString Formula where
+  fromString = Atom . Test.pack
