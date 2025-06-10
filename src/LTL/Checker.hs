@@ -1,4 +1,7 @@
 {-# LANGUAGE OverloadedRecordDot #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Avoid lambda using `infix`" #-}
 
 module LTL.Checker (check) where
 
@@ -33,11 +36,10 @@ checkAt :: (Eq state, Ord state) => KripkeState state Text -> LTL.Formula -> Boo
 checkAt k formula =
   case formula of
     LTL.Bottom -> False
-    LTL.And fl fr -> checkAt k fl && checkAt k fr
-    LTL.Not f' -> not (checkAt k f')
+    LTL.And fl fr -> k `checkAt` fl && k `checkAt` fr
+    LTL.Not f' -> not (k `checkAt` f')
     LTL.Atom prop -> k.interpret prop
     LTL.Next f' -> all (`checkAt` f') k.transitions
-    LTL.Until _ guard | checkAt k guard -> True
-    LTL.Until condition _ | not (checkAt k condition) -> False
-    LTL.Until condition guard ->
-      all (\s -> checkAt s (LTL.Until condition guard)) k.transitions
+    LTL.Until _ guard | k `checkAt` guard -> True
+    LTL.Until condition _ | not (k `checkAt` condition) -> False
+    LTL.Until _ _ -> all (`checkAt` formula) k.transitions
