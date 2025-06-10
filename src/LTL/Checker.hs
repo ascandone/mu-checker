@@ -1,20 +1,18 @@
 {-# LANGUAGE OverloadedRecordDot #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
-{-# HLINT ignore "Avoid lambda using `infix`" #-}
+module LTL.Checker (check, VerificationResult (..)) where
 
-module LTL.Checker (check) where
-
+import qualified Data.Maybe
 import Data.Text (Text)
 import Kripke (Kripke)
 import qualified Kripke
 import qualified LTL.Formula as LTL
 
 -- | Check that the formula is verified in the given Kripke structure
-check :: (Eq state, Ord state) => Kripke state Text -> LTL.Formula -> Bool
+check :: (Eq state, Ord state) => Kripke state Text -> LTL.Formula -> VerificationResult state
 check k f =
-  all
-    (\s -> kripke s `checkAt` f)
+  vall
+    (\s -> kripke s `verifyAt` f)
     (Kripke.initial k)
  where
   kripke s =
@@ -31,15 +29,48 @@ data KripkeState state prop = KripkeState
   , interpret :: prop -> Bool
   }
 
+data VerificationResult state
+  = Verify
+  | Falsify [state]
+  deriving (Show, Eq, Ord)
+
 -- TODO fix looping
-checkAt :: (Eq state, Ord state) => KripkeState state Text -> LTL.Formula -> Bool
-checkAt k formula =
-  case formula of
-    LTL.Bottom -> False
-    LTL.And fl fr -> k `checkAt` fl && k `checkAt` fr
-    LTL.Not f' -> not (k `checkAt` f')
-    LTL.Atom prop -> k.interpret prop
-    LTL.Next f' -> all (`checkAt` f') k.transitions
-    LTL.Until _ guard | k `checkAt` guard -> True
-    LTL.Until condition _ | not (k `checkAt` condition) -> False
-    LTL.Until _ _ -> all (`checkAt` formula) k.transitions
+verifyAt :: (Eq state, Ord state) => KripkeState state Text -> LTL.Formula -> VerificationResult state
+verifyAt k formula = appendK $ case formula of
+  LTL.Bottom -> vbool False
+  LTL.And fl fr -> kVerify fl `vand` kVerify fr
+  LTL.Not f' -> vnot (kVerify f')
+  LTL.Atom prop -> vbool (k.interpret prop)
+  LTL.Next f' -> vall (`verifyAt` f') k.transitions
+  LTL.Until condition guard ->
+    kVerify guard `vor` (kVerify condition `vand` vall (`verifyAt` formula) k.transitions)
+ where
+  kVerify = verifyAt k
+  appendK Verify = Verify
+  appendK (Falsify ks) = Falsify (k.state : ks)
+
+vbool :: Bool -> VerificationResult state
+vbool True = Verify
+vbool False = Falsify []
+
+vand :: VerificationResult state -> VerificationResult state -> VerificationResult state
+vand Verify y = y
+vand f@(Falsify _) _ = f
+
+vor :: VerificationResult state -> VerificationResult state -> VerificationResult state
+vor Verify _ = Verify
+vor (Falsify _) y = y
+
+vnot :: VerificationResult state -> VerificationResult state
+vnot Verify = vbool False
+vnot (Falsify _) = vbool True
+
+vall :: (a -> VerificationResult state) -> [a] -> VerificationResult state
+vall predicate xs =
+  case Data.Maybe.mapMaybe extractCounterExample xs of
+    [] -> Verify
+    counterexample : _ -> Falsify counterexample
+ where
+  extractCounterExample res = case predicate res of
+    Verify -> Nothing
+    Falsify counterexample -> Just counterexample
