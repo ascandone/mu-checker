@@ -17,9 +17,8 @@ import Test.Hspec
 
 spec :: Spec
 spec =
-  describe "LTL checker tests" $ do
-    Control.Monad.forM_ tests $ \testCase ->
-      fromTC testCase
+  Control.Monad.forM_ tests $ \testCase ->
+    fromTC testCase
 
 tests :: [CheckerTestCase]
 tests =

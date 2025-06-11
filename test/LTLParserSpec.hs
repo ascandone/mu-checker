@@ -13,7 +13,7 @@ testCase src expected =
     P.parse (Text.pack src) `shouldBe` Right expected
 
 spec :: Spec
-spec = describe "LTL Parser" $ do
+spec = do
   testCase "x" "x"
 
   testCase "!x" $

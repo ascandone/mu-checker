@@ -13,7 +13,7 @@ import qualified Mu.Formula as Mu
 import Test.Hspec
 
 spec :: Spec
-spec = describe "CCS Parser tests" $ do
+spec = do
   testParseProcess "0" $
     Choice []
 
@@ -210,12 +210,21 @@ spec = describe "CCS Parser tests" $ do
 
 testParseProgram :: String -> CCS.Program -> SpecWith ()
 testParseProgram src expected =
-  it src $ case P.parse "test" (Text.pack src) of
+  it (unescape src) $ case P.parse "test" (Text.pack src) of
     Left e -> error $ errorBundlePretty e
     Right p -> p `shouldBe` expected
 
 testParseProcess :: String -> CCS.Process -> SpecWith ()
 testParseProcess src expected =
-  it src $ case P.parseProc "test" (Text.pack src) of
+  it (unescape src) $ case P.parseProc "test" (Text.pack src) of
     Left e -> error $ errorBundlePretty e
     Right p -> p `shouldBe` expected
+
+unescape :: String -> String
+unescape =
+  concatMap
+    ( \ch ->
+        if ch == '\n'
+          then "\\n"
+          else [ch]
+    )

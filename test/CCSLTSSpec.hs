@@ -10,7 +10,7 @@ import Data.Text (Text)
 import Test.Hspec
 
 spec :: Spec
-spec = describe "CCS LTS" $ do
+spec = do
   it "empty program has no transitions" $ do
     getTransitions [] "0" `shouldBe` []
 

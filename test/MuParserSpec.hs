@@ -22,7 +22,7 @@ tau :: FormulaEvent
 tau = Evt Tau
 
 spec :: Spec
-spec = describe "MuFormulaParser" $ do
+spec = do
   testCase "x" "x"
   testCase "!x" $
     Not "x"
