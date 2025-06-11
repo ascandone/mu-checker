@@ -20,7 +20,6 @@ import qualified Mu.Verify
 
 newtype FailingSpec
   = FalsifiedFormula Mu.Formula
-  deriving (Show)
 
 type DefinitionsMap = Map Text CCS.Definition
 
@@ -39,8 +38,8 @@ mapChoice :: Maybe CCS.EventChoice -> Mu.Evt
 mapChoice evt =
   case evt of
     Nothing -> Mu.Tau
-    Just (CCS.Rcv e) -> Mu.Snd e
-    Just (CCS.Snd e) -> Mu.Rcv e
+    Just (CCS.Rcv e) -> Mu.Rcv e
+    Just (CCS.Snd e) -> Mu.Snd e
 
 makeLts :: DefinitionsMap -> CCS.Process -> Either CCS.LTS.Err (LTS CCS.Process Mu.Evt)
 makeLts defs proc_ = do

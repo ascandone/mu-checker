@@ -66,8 +66,8 @@ eventFormula = Expr.makeExprParser eventFormulaTerm evtFormulaOperatorTable
 eventFormulaTerm :: Parser Mu.FormulaEvent
 eventFormulaTerm =
   choice
-    [ Mu.evtAlways <$ symbol "true"
-    , Mu.EvtBottom <$ symbol "false"
+    [ Mu.Up <$ symbol "true"
+    , Mu.evtBottom <$ symbol "false"
     , Mu.Evt Mu.Tau <$ symbol "tau"
     , evtIdent
     ]

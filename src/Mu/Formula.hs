@@ -7,7 +7,7 @@ module Mu.Formula (
   imply,
   box,
   evtOr,
-  evtAlways,
+  evtBottom,
   nu,
 ) where
 
@@ -23,7 +23,7 @@ data Evt
 
 data FormulaEvent
   = Evt Evt
-  | EvtBottom
+  | Up
   | EvtAnd FormulaEvent FormulaEvent
   | EvtNot FormulaEvent
   deriving (Show, Eq, Ord)
@@ -31,8 +31,8 @@ data FormulaEvent
 evtOr :: FormulaEvent -> FormulaEvent -> FormulaEvent
 evtOr x y = EvtNot (EvtNot x `EvtAnd` EvtNot y)
 
-evtAlways :: FormulaEvent
-evtAlways = EvtNot EvtBottom
+evtBottom :: FormulaEvent
+evtBottom = EvtNot Up
 
 data Formula
   = Bottom

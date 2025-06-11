@@ -201,7 +201,7 @@ spec = do
         , specs =
             [ CCS.Ranged
                 ()
-                ( Mu.Diamond Mu.EvtBottom "x"
+                ( Mu.Diamond Mu.evtBottom "x"
                 )
             ]
         , definition = Choice []

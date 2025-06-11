@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
 module Mu.Verify (
   LTS (..),
   verify,
@@ -19,7 +21,10 @@ verify lts@(State _ transitions) formula = case formula of
     case evt of
       Mu.EvtAnd l r -> verify lts (Mu.Diamond l formula') && verify lts (Mu.Diamond r formula')
       Mu.EvtNot evt' -> not $ verify lts (Mu.Diamond evt' formula')
-      Mu.EvtBottom -> False
+      Mu.Up ->
+        any
+          (\(_, lts') -> verify lts' formula')
+          transitions
       Mu.Evt evt' ->
         any
           (\(evt'', lts') -> evt' == evt'' && verify lts' formula')

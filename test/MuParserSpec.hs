@@ -3,7 +3,7 @@
 module MuParserSpec (spec) where
 
 import qualified Data.Text as Text
-import Mu.Formula (Evt (..), Formula (..), FormulaEvent (..), box, evtAlways, evtOr)
+import Mu.Formula (Evt (..), Formula (..), FormulaEvent (..), box, evtBottom, evtOr)
 import qualified Mu.Parser as P
 import Test.Hspec
 import Prelude hiding (snd)
@@ -30,14 +30,14 @@ spec = do
     Not (Not "x")
   testCase "!a && !b" $
     Not "a" `And` Not "b"
-  testCase "<false> x" $
-    Diamond EvtBottom "x"
-  testCase "[false] x" $
-    box EvtBottom "x"
-  testCase "<false> <false> x" $
-    Diamond EvtBottom (Diamond EvtBottom "x")
-  testCase "<false || !true> x" $
-    Diamond (EvtBottom `evtOr` EvtNot evtAlways) "x"
+  testCase "<true> x" $
+    Diamond Up "x"
+  testCase "[true] x" $
+    box Up "x"
+  testCase "<true> <true> x" $
+    Diamond Up (Diamond Up "x")
+  testCase "<true || !false> x" $
+    Diamond (Up `evtOr` EvtNot evtBottom) "x"
   testCase "<a?> x" $
     Diamond (rcv "a") "x"
   testCase "<a!> x" $

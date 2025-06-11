@@ -146,6 +146,7 @@ test-suite test
         MuParserSpec,
         CCSParserSpec,
         CCSLTSSpec,
+        CCSCheckerSpec,
 
     -- Test dependencies.
     build-depends:
