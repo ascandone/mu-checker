@@ -49,6 +49,7 @@ operatorTable =
         [ Mu.Not <$ symbol "!"
         , Mu.Diamond <$> diamond
         , Mu.box <$> box
+        , Mu.Mu <$ symbol "mu" <*> lexeme lowercaseIdent <* symbol "."
         ]
     ]
   ,
