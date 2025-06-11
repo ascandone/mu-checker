@@ -3,7 +3,7 @@
 module MuFormulaParserTests (suite) where
 
 import qualified Data.Text as Text
-import Mu.Formula (Formula (..))
+import Mu.Formula (Formula (..), FormulaEvent (..), box, evtAlways, evtOr)
 import qualified Mu.Formula.Parser as P
 import Test.Tasty (testGroup)
 import qualified Test.Tasty as Tasty
@@ -25,6 +25,14 @@ tests =
       Not (Not "x")
   , testCase "!a && !b" $
       Not "a" `And` Not "b"
+  , testCase "<false> x" $
+      Diamond EvtBottom "x"
+  , testCase "[false] x" $
+      box EvtBottom "x"
+  , testCase "<false> <false> x" $
+      Diamond EvtBottom (Diamond EvtBottom "x")
+  , testCase "<false || !true> x" $
+      Diamond (EvtBottom `evtOr` EvtNot evtAlways) "x"
   ]
 
 suite :: Tasty.TestTree

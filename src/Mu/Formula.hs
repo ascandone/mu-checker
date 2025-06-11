@@ -1,5 +1,6 @@
 module Mu.Formula (
   Formula (..),
+  FormulaEvent (..),
   lor,
   always,
   imply,
@@ -16,16 +17,16 @@ data FormulaEvent
   = Rcv Text
   | Snd Text
   | Tau
-  | Bottom_
-  | And_ FormulaEvent FormulaEvent
-  | Not_ FormulaEvent
+  | EvtBottom
+  | EvtAnd FormulaEvent FormulaEvent
+  | EvtNot FormulaEvent
   deriving (Show, Eq, Ord)
 
 evtOr :: FormulaEvent -> FormulaEvent -> FormulaEvent
-evtOr x y = Not_ (Not_ x `And_` Not_ y)
+evtOr x y = EvtNot (EvtNot x `EvtAnd` EvtNot y)
 
 evtAlways :: FormulaEvent
-evtAlways = Not_ Bottom_
+evtAlways = EvtNot EvtBottom
 
 data Formula
   = Bottom

@@ -50,6 +50,8 @@ operatorTable =
   [
     [ nestablePrefixes
         [ Mu.Not <$ symbol "!"
+        , Mu.Diamond <$> diamond
+        , Mu.box <$> box
         ]
     ]
   ,
@@ -59,13 +61,45 @@ operatorTable =
     ]
   ]
 
-nestablePrefixes :: [Parser (Mu.Formula -> Mu.Formula)] -> Expr.Operator Parser Mu.Formula
-nestablePrefixes pr =
-  Expr.Prefix (foldr1 (.) <$> Text.Megaparsec.some (choice pr))
+-- Evt
+
+eventFormula :: Parser Mu.FormulaEvent
+eventFormula = Expr.makeExprParser eventFormulaTerm evtFormulaOperatorTable
+
+eventFormulaTerm :: Parser Mu.FormulaEvent
+eventFormulaTerm =
+  choice
+    [ Mu.evtAlways <$ symbol "true"
+    , Mu.EvtBottom <$ symbol "false"
+    -- TODO evt!, evt?
+    ]
+    <?> "event formula"
+
+diamond :: Parser Mu.FormulaEvent
+diamond = lexeme $ between "<" ">" eventFormula
+
+box :: Parser Mu.FormulaEvent
+box = lexeme $ between "[" "]" eventFormula
+
+evtFormulaOperatorTable :: [[Expr.Operator Parser Mu.FormulaEvent]]
+evtFormulaOperatorTable =
+  [
+    [ nestablePrefixes
+        [ Mu.EvtNot <$ symbol "!"
+        ]
+    ]
+  ,
+    [ Expr.InfixL $ Mu.EvtAnd <$ symbol "&&"
+    , Expr.InfixL $ Mu.evtOr <$ symbol "||"
+    ]
+  ]
 
 -- Boilerplate
 
 type Parser = Parsec Void Text
+nestablePrefixes :: [Parser (a -> a)] -> Expr.Operator Parser a
+nestablePrefixes pr =
+  Expr.Prefix (foldr1 (.) <$> Text.Megaparsec.some (choice pr))
 
 sc :: Parser ()
 sc =
