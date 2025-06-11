@@ -11,7 +11,7 @@ import qualified Kripke
 import LTL.Checker (VerificationResult (..), check)
 import LTL.Formula (Formula)
 import qualified LTL.Formula as LTL
-import qualified LTL.Formula.Parser as P
+import qualified LTL.Parser as P
 import qualified Test.Tasty as Tasty
 import Test.Tasty.HUnit (testCase, (@?=))
 

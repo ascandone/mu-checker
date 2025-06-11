@@ -4,7 +4,7 @@ module MuFormulaParserTests (suite) where
 
 import qualified Data.Text as Text
 import Mu.Formula (Evt (..), Formula (..), FormulaEvent (..), box, evtAlways, evtOr)
-import qualified Mu.Formula.Parser as P
+import qualified Mu.Parser as P
 import Test.Tasty (testGroup)
 import qualified Test.Tasty as Tasty
 import Test.Tasty.HUnit ((@?=))

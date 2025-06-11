@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mu.Formula.Parser (parse, formulaParser) where
+module Mu.Parser (parse, formulaParser) where
 
 import Control.Applicative.Combinators (choice)
 import qualified Control.Monad.Combinators.Expr as Expr

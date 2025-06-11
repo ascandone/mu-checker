@@ -4,7 +4,7 @@ module FormulaParserTests (suite) where
 
 import qualified Data.Text as Text
 import LTL.Formula (Formula (..), globally)
-import qualified LTL.Formula.Parser as P
+import qualified LTL.Parser as P
 import Test.Tasty (testGroup)
 import qualified Test.Tasty as Tasty
 import Test.Tasty.HUnit ((@?=))

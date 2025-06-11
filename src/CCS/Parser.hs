@@ -4,7 +4,7 @@
 {-# HLINT ignore "Use <$>" #-}
 {-# HLINT ignore "Use <$" #-}
 
-module CCS.Program.Parser (
+module CCS.Parser (
   parse,
   parseProc,
   Text.Megaparsec.errorBundlePretty,
@@ -18,7 +18,7 @@ import qualified Data.Maybe
 import Data.Text (Text)
 import Data.Void
 import qualified Mu.Formula as Mu
-import qualified Mu.Formula.Parser
+import qualified Mu.Parser
 import Parser (Parser, lexeme, lowercaseIdent, parens, sc, symbol, uppercaseIdent)
 import Text.Megaparsec (MonadParsec (eof), between, many, optional, sepBy, sepBy1, (<?>))
 import qualified Text.Megaparsec
@@ -50,7 +50,7 @@ ranged :: Parser p -> Parser (CCS.Ranged p)
 ranged p = CCS.Ranged () <$> p
 
 specP :: Parser (CCS.Ranged Mu.Formula)
-specP = ranged (symbol "@specs" *> Mu.Formula.Parser.formulaParser)
+specP = ranged (symbol "@specs" *> Mu.Parser.formulaParser)
 
 definitionP :: Parser CCS.Definition
 definitionP =

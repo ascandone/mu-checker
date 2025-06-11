@@ -3,7 +3,7 @@
 
 {-# HLINT ignore "Move guards forward" #-}
 
-module CCS.Program.Checker (
+module CCS.Checker (
   verifyProgram,
   FailingSpec (..),
 ) where

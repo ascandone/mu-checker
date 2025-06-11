@@ -3,8 +3,8 @@
 module CCSLTSTests (suite) where
 
 import qualified CCS.LTS as LTS
+import qualified CCS.Parser as P
 import qualified CCS.Program as CCS
-import qualified CCS.Program.Parser as P
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Test.Tasty as Tasty

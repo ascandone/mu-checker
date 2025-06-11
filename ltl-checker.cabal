@@ -61,13 +61,13 @@ library
     exposed-modules:
         Kripke,
         LTL.Formula,
-        LTL.Formula.Parser,
+        LTL.Parser,
         Mu.Formula,
-        Mu.Formula.Parser,
+        Mu.Parser,
         Mu.Verify,
         CCS.Program,
-        CCS.Program.Parser,
-        CCS.Program.Checker,
+        CCS.Parser,
+        CCS.Checker,
         CCS.LTS,
         LTL.Checker,
 

@@ -4,10 +4,10 @@
 {-# HLINT ignore "Redundant $" #-}
 module CCSProgramParserTests (suite) where
 
+import CCS.Parser (errorBundlePretty)
+import qualified CCS.Parser as P
 import CCS.Program (Definition (..), EventChoice (..), Process (..))
 import qualified CCS.Program as CCS
-import CCS.Program.Parser (errorBundlePretty)
-import qualified CCS.Program.Parser as P
 import qualified Data.Text as Text
 import qualified Mu.Formula as Mu
 import Test.Tasty (testGroup)
