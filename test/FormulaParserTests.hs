@@ -5,39 +5,40 @@ module FormulaParserTests (suite) where
 import qualified Data.Text as Text
 import LTL.Formula (Formula (..), globally)
 import qualified LTL.Parser as P
-import Test.Tasty (testGroup)
-import qualified Test.Tasty as Tasty
-import Test.Tasty.HUnit ((@?=))
-import qualified Test.Tasty.HUnit
+import Test.Hspec
 
-testCase :: String -> Formula -> Tasty.TestTree
+testCase :: String -> Formula -> SpecWith ()
 testCase src expected =
-  Test.Tasty.HUnit.testCase
-    src
-    (P.parse (Text.pack src) @?= Right expected)
+  it src $ do
+    P.parse (Text.pack src) `shouldBe` Right expected
 
-tests :: [Tasty.TestTree]
-tests =
-  [ testCase "x" "x"
-  , testCase "!x" $
-      Not "x"
-  , testCase "!! x" $
-      Not (Not "x")
-  , testCase "X X x" $
-      Next (Next "x")
-  , testCase "X !x" $
-      Next (Not "x")
-  , testCase " ! (X x)" $
-      Not (Next "x")
-  , testCase " ! ! X x" $
-      Not (Not (Next "x"))
-  , testCase "!a && !b" $
-      Not "a" `And` Not "b"
-  , testCase "G X x" $
-      globally (Next "x")
-  , testCase "a U b" $
-      "a" `Until` "b"
-  ]
+suite :: SpecWith ()
+suite = describe "LTL Parser" $ do
+  testCase "x" "x"
 
-suite :: Tasty.TestTree
-suite = testGroup "LTLFormulaTests" tests
+  testCase "!x" $
+    Not "x"
+
+  testCase "!! x" $
+    Not (Not "x")
+
+  testCase "X X x" $
+    Next (Next "x")
+
+  testCase "X !x" $
+    Next (Not "x")
+
+  testCase " ! (X x)" $
+    Not (Next "x")
+
+  testCase " ! ! X x" $
+    Not (Not (Next "x"))
+
+  testCase "!a && !b" $
+    Not "a" `And` Not "b"
+
+  testCase "G X x" $
+    globally (Next "x")
+
+  testCase "a U b" $
+    "a" `Until` "b"

@@ -7,44 +7,42 @@ import qualified CCS.Parser as P
 import qualified CCS.Program as CCS
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
-import qualified Test.Tasty as Tasty
-import qualified Test.Tasty as Tasy
-import Test.Tasty.HUnit (testCase, (@?=))
+import Test.Hspec (SpecWith, describe, it, shouldBe)
 
-tests :: [Tasy.TestTree]
-tests =
-  [ testCase "empty program has no transitions" $
-      getTransitions [] "0"
-        @?= []
-  , testCase "unary choice" $
-      getTransitions [] "a?.0"
-        @?= [ (Just $ CCS.Rcv "a", CCS.Choice [])
-            ]
-  , testCase "binary choice" $
-      getTransitions [] "a?.A + b!.B"
-        @?= [ (Just $ CCS.Rcv "a", CCS.Ident "A" [])
-            , (Just $ CCS.Snd "b", CCS.Ident "B" [])
-            ]
-  , testCase "wrapped in par" $
-      getTransitions [] "0 | a?.A + b!.B | 0"
-        @?= [ (Just $ CCS.Rcv "a", parse "0 | A | 0")
-            , (Just $ CCS.Snd "b", parse "0 | B | 0")
-            ]
-  , testCase "wrapped in par both transitions" $
-      getTransitions [] "a?.A | b!.B"
-        @?= [ (Just $ CCS.Rcv "a", parse "A | b!.B")
-            , (Just $ CCS.Snd "b", parse "a?.A | B")
-            ]
-  , testCase "handshake" $
-      getTransitions [] "a?.X | a!.Y"
-        @?= [ (Just $ CCS.Rcv "a", parse "X | a!.Y")
-            , (Just $ CCS.Snd "a", parse "a?.X | Y")
-            , (Nothing, parse "X | Y")
-            ]
-  ]
+suite :: SpecWith ()
+suite = describe "CCS LTS" $ do
+  it "empty program has no transitions" $ do
+    getTransitions [] "0" `shouldBe` []
 
-suite :: Tasty.TestTree
-suite = Tasty.testGroup "CCSLTsTests" tests
+  it "unary choice" $ do
+    getTransitions [] "a?.0"
+      `shouldBe` [ (Just $ CCS.Rcv "a", CCS.Choice [])
+                 ]
+
+  it "binary choice" $ do
+    getTransitions [] "a?.A + b!.B"
+      `shouldBe` [ (Just $ CCS.Rcv "a", CCS.Ident "A" [])
+                 , (Just $ CCS.Snd "b", CCS.Ident "B" [])
+                 ]
+
+  it "wrapped in par" $ do
+    getTransitions [] "0 | a?.A + b!.B | 0"
+      `shouldBe` [ (Just $ CCS.Rcv "a", parse "0 | A | 0")
+                 , (Just $ CCS.Snd "b", parse "0 | B | 0")
+                 ]
+
+  it "wrapped in par both transitions" $ do
+    getTransitions [] "a?.A | b!.B"
+      `shouldBe` [ (Just $ CCS.Rcv "a", parse "A | b!.B")
+                 , (Just $ CCS.Snd "b", parse "a?.A | B")
+                 ]
+
+  it "handshake" $ do
+    getTransitions [] "a?.X | a!.Y"
+      `shouldBe` [ (Just $ CCS.Rcv "a", parse "X | a!.Y")
+                 , (Just $ CCS.Snd "a", parse "a?.X | Y")
+                 , (Nothing, parse "X | Y")
+                 ]
 
 parse :: Text -> CCS.Process
 parse = unwrapRight . P.parseProc "proc"

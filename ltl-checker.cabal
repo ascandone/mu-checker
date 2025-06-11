@@ -152,5 +152,4 @@ test-suite test
         base ^>=4.17.2.1,
         containers >= 0.6.7 && < 0.7,
         text >= 2.0.2 && < 2.1,
-        tasty ^>=1.5,
-        tasty-hunit ^>=0.10,
+        hspec >= 2.11.12

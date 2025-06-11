@@ -5,18 +5,14 @@ import qualified CCSProgramParserTests
 import qualified FormulaParserTests
 import qualified LTLCheckerTests
 import qualified MuFormulaParserTests
-import Test.Tasty (TestTree, defaultMain, testGroup)
+
+import Test.Hspec (hspec)
 
 main :: IO ()
-main = defaultMain tests
-
-tests :: TestTree
-tests =
-  testGroup
-    "Tests"
-    [ LTLCheckerTests.suite
-    , FormulaParserTests.suite
-    , MuFormulaParserTests.suite
-    , CCSProgramParserTests.suite
-    , CCSLTSTests.suite
-    ]
+main =
+  hspec $ do
+    CCSLTSTests.suite
+    CCSProgramParserTests.suite
+    FormulaParserTests.suite
+    LTLCheckerTests.suite
+    MuFormulaParserTests.suite

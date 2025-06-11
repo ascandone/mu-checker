@@ -3,6 +3,7 @@
 
 module LTLCheckerTests (suite) where
 
+import qualified Control.Monad
 import qualified Data.Either
 import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
@@ -12,11 +13,13 @@ import LTL.Checker (VerificationResult (..), check)
 import LTL.Formula (Formula)
 import qualified LTL.Formula as LTL
 import qualified LTL.Parser as P
-import qualified Test.Tasty as Tasty
-import Test.Tasty.HUnit (testCase, (@?=))
+import Test.Hspec
 
-parse :: Text -> Formula
-parse = Data.Either.fromRight (error "fromRight") . P.parse
+suite :: SpecWith ()
+suite =
+  describe "LTL checker tests" $ do
+    Control.Monad.forM_ tests $ \testCase ->
+      fromTC testCase
 
 tests :: [CheckerTestCase]
 tests =
@@ -200,23 +203,18 @@ tests =
       }
   ]
 
-suite :: Tasty.TestTree
-suite = fromTC $ Group "CheckerTests" tests
-
 data CheckerTestCase
   = CheckerTestCase
-      { label :: String
-      , formula :: LTL.Formula
-      , expected :: VerificationResult Text
-      , initial :: [Text]
-      , transitions :: [(Text, [Text])]
-      , interpret :: [(Text, [Text])]
-      }
-  | Group String [CheckerTestCase]
+  { label :: String
+  , formula :: LTL.Formula
+  , expected :: VerificationResult Text
+  , initial :: [Text]
+  , transitions :: [(Text, [Text])]
+  , interpret :: [(Text, [Text])]
+  }
 
-fromTC :: CheckerTestCase -> Tasty.TestTree
-fromTC (Group label_ tests_) = Tasty.testGroup label_ (map fromTC tests_)
-fromTC tc = testCase tc.label $ check k tc.formula @?= tc.expected
+fromTC :: CheckerTestCase -> SpecWith ()
+fromTC tc = it tc.label $ check k tc.formula `shouldBe` tc.expected
  where
   transitionsGraph = Map.fromList tc.transitions
   interpretationGraph = Map.fromList tc.interpret
@@ -230,3 +228,6 @@ fromTC tc = testCase tc.label $ check k tc.formula @?= tc.expected
       , Kripke.transitions = transitions'
       , Kripke.interpret = interpret'
       }
+
+parse :: Text -> Formula
+parse = Data.Either.fromRight (error "fromRight") . P.parse
