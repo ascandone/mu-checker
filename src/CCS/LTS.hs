@@ -2,6 +2,7 @@
 
 module CCS.LTS (
   getTransitions,
+  Err (..),
 ) where
 
 import qualified CCS.Program as CCS

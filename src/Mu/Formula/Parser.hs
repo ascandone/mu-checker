@@ -41,8 +41,8 @@ evtIdent = lexeme $ do
   rest <- many alphaNumChar
   let text = T.pack (first : rest)
   choice
-    [ Mu.Snd text <$ symbol "!"
-    , Mu.Rcv text <$ symbol "?"
+    [ Mu.Evt (Mu.Snd text) <$ symbol "!"
+    , Mu.Evt (Mu.Rcv text) <$ symbol "?"
     ]
 
 formula :: Parser Mu.Formula
@@ -84,7 +84,7 @@ eventFormulaTerm =
   choice
     [ Mu.evtAlways <$ symbol "true"
     , Mu.EvtBottom <$ symbol "false"
-    , Mu.Tau <$ symbol "tau"
+    , Mu.Evt Mu.Tau <$ symbol "tau"
     , evtIdent
     ]
     <?> "event formula"

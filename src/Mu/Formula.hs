@@ -1,6 +1,7 @@
 module Mu.Formula (
   Formula (..),
   FormulaEvent (..),
+  Evt (..),
   lor,
   always,
   imply,
@@ -13,10 +14,14 @@ import qualified Data.String
 import Data.Text (Text)
 import qualified Data.Text as Test
 
-data FormulaEvent
+data Evt
   = Rcv Text
   | Snd Text
   | Tau
+  deriving (Show, Eq, Ord)
+
+data FormulaEvent
+  = Evt Evt
   | EvtBottom
   | EvtAnd FormulaEvent FormulaEvent
   | EvtNot FormulaEvent

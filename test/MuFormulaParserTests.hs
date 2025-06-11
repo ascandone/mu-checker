@@ -3,18 +3,27 @@
 module MuFormulaParserTests (suite) where
 
 import qualified Data.Text as Text
-import Mu.Formula (Formula (..), FormulaEvent (..), box, evtAlways, evtOr)
+import Mu.Formula (Evt (..), Formula (..), FormulaEvent (..), box, evtAlways, evtOr)
 import qualified Mu.Formula.Parser as P
 import Test.Tasty (testGroup)
 import qualified Test.Tasty as Tasty
 import Test.Tasty.HUnit ((@?=))
 import qualified Test.Tasty.HUnit
+import Prelude hiding (snd)
 
 testCase :: String -> Formula -> Tasty.TestTree
 testCase src expected =
   Test.Tasty.HUnit.testCase
     src
     (P.parse (Text.pack src) @?= Right expected)
+
+rcv :: Text.Text -> FormulaEvent
+rcv = Evt . Rcv
+snd :: Text.Text -> FormulaEvent
+snd = Evt . Snd
+
+tau :: FormulaEvent
+tau = Evt Tau
 
 tests :: [Tasty.TestTree]
 tests =
@@ -34,14 +43,14 @@ tests =
   , testCase "<false || !true> x" $
       Diamond (EvtBottom `evtOr` EvtNot evtAlways) "x"
   , testCase "<a?> x" $
-      Diamond (Rcv "a") "x"
+      Diamond (rcv "a") "x"
   , testCase "<a!> x" $
-      Diamond (Snd "a") "x"
+      Diamond (snd "a") "x"
   , testCase "<a!> <b?> x" $
-      Diamond (Snd "a") $
-        Diamond (Rcv "b") "x"
+      Diamond (snd "a") $
+        Diamond (rcv "b") "x"
   , testCase "<tau> x" $
-      Diamond Tau "x"
+      Diamond tau "x"
   ]
 
 suite :: Tasty.TestTree

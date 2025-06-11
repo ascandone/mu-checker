@@ -64,6 +64,7 @@ library
         LTL.Formula.Parser,
         Mu.Formula,
         Mu.Formula.Parser,
+        Mu.Verify,
         CCS.Program,
         CCS.Program.Parser,
         CCS.LTS,
