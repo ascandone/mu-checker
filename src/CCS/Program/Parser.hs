@@ -22,7 +22,6 @@ import qualified Mu.Formula.Parser
 import Parser (Parser, lexeme, lowercaseIdent, parens, sc, symbol, uppercaseIdent)
 import Text.Megaparsec (MonadParsec (eof), between, many, optional, sepBy, sepBy1, (<?>))
 import qualified Text.Megaparsec
-import Text.Megaparsec.Char (char)
 
 parse :: String -> Text -> Either (Text.Megaparsec.ParseErrorBundle Text Void) CCS.Program
 parse = Text.Megaparsec.parse (sc *> programP <* eof)
@@ -84,7 +83,7 @@ ccsChoice =
 labelsList :: Parser [Text]
 labelsList =
   choice
-    [ between (char '{') (char '}') $
+    [ between (symbol "{") (symbol "}") $
         ident `sepBy` symbol ","
     , (: []) <$> ident
     ]

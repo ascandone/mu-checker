@@ -36,6 +36,12 @@ tests =
   , testParseProcess "0\\{a, b}" $
       Restriction "a" $
         Restriction "b" (Choice [])
+  , testParseProcess "X\\{a, b}" $
+      Restriction "a" $
+        Restriction "b" (Ident "X" [])
+  , testParseProcess "(X)\n\\{\na, b}" $
+      Restriction "a" $
+        Restriction "b" (Ident "X" [])
   , testParseProgram "Main = 0" $
       [ Definition
           { name = "Main"
