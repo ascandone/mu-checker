@@ -52,6 +52,17 @@ tests =
           , specs = []
           }
       ]
+  , testCase "P = X | Y" $
+      [ Definition
+          { name = "P"
+          , params = []
+          , specs = []
+          , definition =
+              Par
+                (Ident "X" [])
+                (Ident "Y" [])
+          }
+      ]
   ]
 
 suite :: Tasty.TestTree

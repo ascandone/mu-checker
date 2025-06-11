@@ -4,13 +4,14 @@
 module CCS.Program.Parser (parse) where
 
 import qualified CCS.Program as CCS
+import qualified CCS.Program as LTL
 import Control.Applicative.Combinators (choice)
 import qualified Control.Monad.Combinators.Expr as Expr
 import qualified Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void
-import Text.Megaparsec (MonadParsec (eof), Parsec, between, empty, many, optional, sepBy)
+import Text.Megaparsec (MonadParsec (eof), Parsec, between, empty, many, optional, sepBy, (<?>))
 import qualified Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -38,7 +39,7 @@ definitionP = do
   name <- procIdent
   params <- procIdentArgs
   _ <- symbol "="
-  process <- procP
+  process <- processP
   return $
     CCS.Definition
       { CCS.name = name
@@ -57,12 +58,23 @@ procIdentArgs =
     lexeme $
       between "(" ")" (argIdent `sepBy` symbol ",")
 
-procP :: Parser CCS.Process
-procP =
+processP :: Parser LTL.Process
+processP = Expr.makeExprParser procTerm operatorTable <?> "process"
+
+procTerm :: Parser CCS.Process
+procTerm =
   choice
     [ CCS.Choice [] <$ symbol "0"
     , CCS.Ident <$> procIdent <*> procIdentArgs
     ]
+    <?> "process term"
+
+operatorTable :: [[Expr.Operator Parser CCS.Process]]
+operatorTable =
+  [
+    [ Expr.InfixL $ CCS.Par <$ symbol "|"
+    ]
+  ]
 
 -- Boilerplate
 
