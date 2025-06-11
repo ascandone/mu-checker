@@ -21,7 +21,7 @@ import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 
 parse :: Text -> Either (Text.Megaparsec.ParseErrorBundle Text Void) LTL.Formula
-parse = Text.Megaparsec.parse (formula <* eof) "ltl"
+parse = Text.Megaparsec.parse (sc *> formula <* eof) "ltl"
 
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
@@ -38,30 +38,36 @@ formula = Expr.makeExprParser term operatorTable <?> "formula"
 term :: Parser LTL.Formula
 term =
   choice
-    [ parens term
+    [ parens formula
     , LTL.always <$ symbol "true"
     , LTL.Bottom <$ symbol "false"
     , LTL.Atom <$> ident
-    , formula
     ]
+    <?> "term"
 
 operatorTable :: [[Expr.Operator Parser LTL.Formula]]
 operatorTable =
   [
-    [ Expr.Prefix (LTL.Not <$ symbol "!")
-    , Expr.Prefix (LTL.Next <$ symbol "X")
-    , Expr.Prefix (LTL.finally <$ symbol "F")
-    , Expr.Prefix (LTL.globally <$ symbol "G")
+    [ nestablePrefixes
+        [ LTL.finally <$ symbol "F"
+        , LTL.Next <$ symbol "X"
+        , LTL.globally <$ symbol "G"
+        , LTL.Not <$ symbol "!"
+        ]
     ]
   ,
-    [ Expr.InfixR (LTL.Until <$ symbol "U") -- TODO release
+    [ Expr.InfixR $ LTL.Until <$ symbol "U"
     ]
   ,
-    [ Expr.InfixL (LTL.And <$ symbol "&&")
-    , Expr.InfixL (LTL.lor <$ symbol "||")
-    , Expr.InfixL (LTL.imply <$ symbol "->")
+    [ Expr.InfixL $ LTL.And <$ symbol "&&"
+    , Expr.InfixL $ LTL.lor <$ symbol "||"
+    , Expr.InfixL $ LTL.imply <$ symbol "->"
     ]
   ]
+
+nestablePrefixes :: [Parser (LTL.Formula -> LTL.Formula)] -> Expr.Operator Parser LTL.Formula
+nestablePrefixes pr =
+  Expr.Prefix (foldr1 (.) <$> Text.Megaparsec.some (choice pr))
 
 -- Boilerplate
 

@@ -2,24 +2,41 @@
 
 module FormulaParserTests (suite) where
 
-import LTL.Formula (Formula (..))
+import qualified Data.Text as Text
+import LTL.Formula (Formula (..), globally)
 import qualified LTL.Formula.Parser as P
 import Test.Tasty (testGroup)
 import qualified Test.Tasty as Tasty
-import Test.Tasty.HUnit (testCase, (@?=))
+import Test.Tasty.HUnit ((@?=))
+import qualified Test.Tasty.HUnit
+
+testCase :: String -> Formula -> Tasty.TestTree
+testCase src expected =
+  Test.Tasty.HUnit.testCase
+    src
+    (P.parse (Text.pack src) @?= Right expected)
 
 tests :: [Tasty.TestTree]
 tests =
-  [ testCase "atom" $
-      P.parse "x" @?= Right "x"
-  , testCase "prefix !" $
-      P.parse "!x" @?= Right (Not "x")
-  , testCase "double !" $
-      P.parse "!!x" @?= Right (Not (Not "x"))
-  , testCase "double X" $
-      P.parse "X X x" @?= Right (Next (Next "x"))
-  , testCase "U" $
-      P.parse "a U b" @?= Right ("a" `Until` "b")
+  [ testCase "x" "x"
+  , testCase "!x" $
+      Not "x"
+  , testCase "!! x" $
+      Not (Not "x")
+  , testCase "X X x" $
+      Next (Next "x")
+  , testCase "X !x" $
+      Next (Not "x")
+  , testCase " ! (X x)" $
+      Not (Next "x")
+  , testCase " ! ! X x" $
+      Not (Not (Next "x"))
+  , testCase "!a && !b" $
+      Not "a" `And` Not "b"
+  , testCase "G X x" $
+      globally (Next "x")
+  , testCase "a U b" $
+      "a" `Until` "b"
   ]
 
 suite :: Tasty.TestTree
