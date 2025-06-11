@@ -74,7 +74,7 @@ tests =
       }
   , CheckerTestCase
       { label = "unwrap the double Not"
-      , formula = parse "! ! X x"
+      , formula = parse "! ! (X x)"
       , expected = Falsify ["a", "does_not_sat_x"]
       , initial = ["a"]
       , transitions =

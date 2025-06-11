@@ -38,27 +38,30 @@ formula = Expr.makeExprParser term operatorTable <?> "formula"
 term :: Parser Mu.Formula
 term =
   choice
-    [ parens term
+    [ parens formula
     , Mu.always <$ symbol "true"
     , Mu.Bottom <$ symbol "false"
     , Mu.Atom <$> ident
-    , formula
     ]
+    <?> "term"
 
 operatorTable :: [[Expr.Operator Parser Mu.Formula]]
 operatorTable =
   [
-    [ Expr.Prefix (Mu.Not <$ symbol "!")
-    -- , Expr.Prefix (Mu.Next <$ symbol "X")
-    -- , Expr.Prefix (Mu.finally <$ symbol "F")
-    -- , Expr.Prefix (Mu.globally <$ symbol "G")
+    [ nestablePrefixes
+        [ Mu.Not <$ symbol "!"
+        ]
     ]
   ,
-    [ Expr.InfixL (Mu.And <$ symbol "&&")
-    , Expr.InfixL (Mu.lor <$ symbol "||")
-    , Expr.InfixL (Mu.imply <$ symbol "->")
+    [ Expr.InfixL $ Mu.And <$ symbol "&&"
+    , Expr.InfixL $ Mu.lor <$ symbol "||"
+    , Expr.InfixL $ Mu.imply <$ symbol "->"
     ]
   ]
+
+nestablePrefixes :: [Parser (Mu.Formula -> Mu.Formula)] -> Expr.Operator Parser Mu.Formula
+nestablePrefixes pr =
+  Expr.Prefix (foldr1 (.) <$> Text.Megaparsec.some (choice pr))
 
 -- Boilerplate
 
