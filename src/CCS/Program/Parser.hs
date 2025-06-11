@@ -64,7 +64,8 @@ processP = Expr.makeExprParser procTerm operatorTable <?> "process"
 procTerm :: Parser CCS.Process
 procTerm =
   choice
-    [ CCS.Choice [] <$ symbol "0"
+    [ between "(" ")" processP
+    , CCS.Choice [] <$ symbol "0"
     , CCS.Ident <$> procIdent <*> procIdentArgs
     ]
     <?> "process term"

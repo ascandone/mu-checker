@@ -63,6 +63,20 @@ tests =
                 (Ident "Y" [])
           }
       ]
+  , testCase "P = X | (Y | Z)" $
+      [ Definition
+          { name = "P"
+          , params = []
+          , specs = []
+          , definition =
+              Par
+                (Ident "X" [])
+                ( Par
+                    (Ident "Y" [])
+                    (Ident "Z" [])
+                )
+          }
+      ]
   ]
 
 suite :: Tasty.TestTree
