@@ -2,6 +2,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Move guards forward" #-}
+{-# HLINT ignore "Use list comprehension" #-}
 
 module CCS.Checker (
   verifyProgram,
@@ -26,7 +27,13 @@ type DefinitionsMap = Map Text CCS.Definition
 verifyDefinitionSpecs :: DefinitionsMap -> CCS.Definition -> Either CCS.LTS.Err [FailingSpec]
 verifyDefinitionSpecs defsMap def = do
   lts <- makeLts defsMap def.definition
-  Right [FalsifiedFormula formula | (CCS.Ranged () formula) <- def.specs, not $ Mu.Verify.verify lts formula]
+  vs <- Control.Monad.forM def.specs $ \(CCS.Ranged () formula) -> do
+    b <- Mu.Verify.verify lts formula
+    return $
+      if b
+        then []
+        else [FalsifiedFormula formula]
+  Right $ concat vs
 
 verifyProgram :: CCS.Program -> [(CCS.Definition, Either CCS.LTS.Err [FailingSpec])]
 verifyProgram definitions = [(def, verifyDefinitionSpecs defsMap def) | def <- definitions]
