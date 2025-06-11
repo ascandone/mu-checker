@@ -107,8 +107,9 @@ executable ltl-checker
 
     -- Other library packages from which modules are imported.
     build-depends:
+        ltl-checker,
         base ^>=4.17.2.1,
-        ltl-checker
+        text >= 2.0.2 && < 2.1,
 
     -- Directories containing source files.
     hs-source-dirs:   app

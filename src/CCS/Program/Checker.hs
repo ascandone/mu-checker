@@ -19,8 +19,9 @@ import Mu.Verify (LTS (..))
 import qualified Mu.Verify
 
 data FailingSpec
-  = FailingSpec
+  = FalsifiedFormula Mu.Formula
   | TransitionError CCS.LTS.Err
+  deriving (Show)
 
 type Definitions = Map Text CCS.Definition
 
@@ -32,7 +33,7 @@ verifyProgram definitions =
   , let ver = makeLts defsMap def.definition
   , failingSpec <- case ver of
       Left e -> [TransitionError e]
-      Right lts -> [FailingSpec | not (Mu.Verify.verify lts formula)]
+      Right lts -> [FalsifiedFormula formula | not (Mu.Verify.verify lts formula)]
   ]
  where
   defsMap :: Definitions
