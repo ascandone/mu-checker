@@ -12,14 +12,12 @@ import Control.Applicative.Combinators (choice)
 import qualified Control.Monad.Combinators.Expr as Expr
 import qualified Data.Maybe
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Void
 import qualified Mu.Formula as Mu
 import qualified Mu.Formula.Parser
-import Parser (Parser, lexeme, parens, sc, symbol)
-import Text.Megaparsec (MonadParsec (eof), many, optional, sepBy, sepBy1, (<?>), (<|>))
+import Parser (Parser, lexeme, lowercaseIdent, parens, sc, symbol, uppercaseIdent)
+import Text.Megaparsec (MonadParsec (eof), many, optional, sepBy, sepBy1, (<?>))
 import qualified Text.Megaparsec
-import Text.Megaparsec.Char
 
 parse :: String -> Text -> Either (Text.Megaparsec.ParseErrorBundle Text Void) CCS.Program
 parse = Text.Megaparsec.parse (sc *> programP <* eof)
@@ -28,24 +26,18 @@ parseProc :: String -> Text -> Either (Text.Megaparsec.ParseErrorBundle Text Voi
 parseProc = Text.Megaparsec.parse (sc *> processP <* eof)
 
 ident :: Parser Text
-ident = do
-  first <- lowerChar
-  rest <- many (alphaNumChar <|> char '_')
-  return $ T.pack (first : rest)
+ident = lexeme lowercaseIdent
 
 choiceIdent :: Parser CCS.EventChoice
-choiceIdent = do
-  name <- ident
+choiceIdent = lexeme $ do
+  name <- lowercaseIdent
   choice
     [ CCS.Snd name <$ symbol "!"
     , CCS.Rcv name <$ symbol "?"
     ]
 
 procIdent :: Parser Text
-procIdent = lexeme $ do
-  first <- upperChar
-  rest <- many alphaNumChar
-  return $ T.pack (first : rest)
+procIdent = lexeme uppercaseIdent
 
 programP :: Parser [CCS.Definition]
 programP = many definitionP
@@ -78,14 +70,14 @@ listOptional p =
 procIdentArgs :: Parser [Text]
 procIdentArgs =
   listOptional $
-    parens (lexeme ident `sepBy` symbol ",")
+    parens (ident `sepBy` symbol ",")
 
 processP :: Parser LTL.Process
 processP = Expr.makeExprParser procTerm operatorTable <?> "process"
 
 ccsChoice :: Parser (CCS.EventChoice, CCS.Process)
 ccsChoice = do
-  evt <- lexeme choiceIdent
+  evt <- choiceIdent
   _ <- symbol "."
   p <- procTerm
   return (evt, p)

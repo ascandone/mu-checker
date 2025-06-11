@@ -5,26 +5,17 @@ module LTL.Formula.Parser (parse) where
 import Control.Applicative.Combinators (choice)
 import qualified Control.Monad.Combinators.Expr as Expr
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Void
 import qualified LTL.Formula as LTL
-import Parser (Parser, lexeme, parens, sc, symbol)
+import Parser (Parser, lexeme, lowercaseIdent, parens, sc, symbol)
 import Text.Megaparsec (
   MonadParsec (eof),
-  many,
   (<?>),
  )
 import qualified Text.Megaparsec
-import Text.Megaparsec.Char
 
 parse :: Text -> Either (Text.Megaparsec.ParseErrorBundle Text Void) LTL.Formula
 parse = Text.Megaparsec.parse (sc *> formula <* eof) "ltl"
-
-ident :: Parser Text
-ident = lexeme $ do
-  first <- lowerChar
-  rest <- many alphaNumChar
-  return $ T.pack (first : rest)
 
 formula :: Parser LTL.Formula
 formula = Expr.makeExprParser term operatorTable <?> "formula"
@@ -35,7 +26,7 @@ term =
     [ parens formula
     , LTL.always <$ symbol "true"
     , LTL.Bottom <$ symbol "false"
-    , LTL.Atom <$> ident
+    , LTL.Atom <$> lexeme lowercaseIdent
     ]
     <?> "term"
 
