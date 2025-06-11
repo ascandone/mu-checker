@@ -18,24 +18,21 @@ import qualified Mu.Formula as Mu
 import Mu.Verify (LTS (..))
 import qualified Mu.Verify
 
-data FailingSpec
+newtype FailingSpec
   = FalsifiedFormula Mu.Formula
-  | TransitionError CCS.LTS.Err
   deriving (Show)
 
-type Definitions = Map Text CCS.Definition
+type DefinitionsMap = Map Text CCS.Definition
 
-verifyProgram :: CCS.Program -> [FailingSpec]
-verifyProgram definitions =
-  [ failingSpec
-  | def <- definitions
-  , (CCS.Ranged () formula) <- def.specs
-  , failingSpec <- case makeLts defsMap def.definition of
-      Left e -> [TransitionError e]
-      Right lts -> [FalsifiedFormula formula | not (Mu.Verify.verify lts formula)]
-  ]
+verifyDefinitionSpecs :: DefinitionsMap -> CCS.Definition -> Either CCS.LTS.Err [FailingSpec]
+verifyDefinitionSpecs defsMap def = do
+  lts <- makeLts defsMap def.definition
+  Right [FalsifiedFormula formula | (CCS.Ranged () formula) <- def.specs, not $ Mu.Verify.verify lts formula]
+
+verifyProgram :: CCS.Program -> [(CCS.Definition, Either CCS.LTS.Err [FailingSpec])]
+verifyProgram definitions = [(def, verifyDefinitionSpecs defsMap def) | def <- definitions]
  where
-  defsMap :: Definitions
+  defsMap :: DefinitionsMap
   defsMap = Map.fromList [(def.name, def) | def <- definitions]
 
 mapChoice :: Maybe CCS.EventChoice -> Mu.Evt
@@ -45,7 +42,7 @@ mapChoice evt =
     Just (CCS.Rcv e) -> Mu.Snd e
     Just (CCS.Snd e) -> Mu.Rcv e
 
-makeLts :: Definitions -> CCS.Process -> Either CCS.LTS.Err (LTS CCS.Process Mu.Evt)
+makeLts :: DefinitionsMap -> CCS.Process -> Either CCS.LTS.Err (LTS CCS.Process Mu.Evt)
 makeLts defs proc_ = do
   transitions <- CCS.LTS.getTransitions defs proc_
   ltsTransitions <- Control.Monad.forM transitions $ \(choice, nextProc) -> do
