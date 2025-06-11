@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module CheckerTests (suite) where
+module LTLCheckerTests (suite) where
 
 import qualified Data.Either
 import qualified Data.Map.Strict as Map

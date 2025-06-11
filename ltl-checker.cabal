@@ -140,7 +140,7 @@ test-suite test
     -- The entrypoint to the test suite.
     main-is:          Main.hs
     other-modules:
-        CheckerTests,
+        LTLCheckerTests,
         FormulaParserTests,
         MuFormulaParserTests,
         CCSProgramParserTests,

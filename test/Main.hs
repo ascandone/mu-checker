@@ -2,8 +2,8 @@ module Main (main) where
 
 import qualified CCSLTSTests
 import qualified CCSProgramParserTests
-import qualified CheckerTests
 import qualified FormulaParserTests
+import qualified LTLCheckerTests
 import qualified MuFormulaParserTests
 import Test.Tasty (TestTree, defaultMain, testGroup)
 
@@ -14,7 +14,7 @@ tests :: TestTree
 tests =
   testGroup
     "Tests"
-    [ CheckerTests.suite
+    [ LTLCheckerTests.suite
     , FormulaParserTests.suite
     , MuFormulaParserTests.suite
     , CCSProgramParserTests.suite
