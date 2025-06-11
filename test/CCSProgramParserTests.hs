@@ -4,7 +4,7 @@
 {-# HLINT ignore "Redundant $" #-}
 module CCSProgramParserTests (suite) where
 
-import CCS.Program (Definition (..), Process (..), Program)
+import CCS.Program (Definition (..), EventChoice (..), Process (..), Program)
 import qualified CCS.Program.Parser as P
 import qualified Data.Text as Text
 import Test.Tasty (testGroup)
@@ -75,6 +75,79 @@ tests =
                     (Ident "Y" [])
                     (Ident "Z" [])
                 )
+          }
+      ]
+  , testCase "P = a?.0" $
+      [ Definition
+          { name = "P"
+          , params = []
+          , specs = []
+          , definition =
+              Choice
+                [ (Rcv "a", Choice [])
+                ]
+          }
+      ]
+  , testCase "P = a?.0 | b!.0" $ --  TODO parens
+      [ Definition
+          { name = "P"
+          , params = []
+          , specs = []
+          , definition =
+              Par
+                ( Choice
+                    [ (Rcv "a", Choice [])
+                    ]
+                )
+                ( Choice
+                    [ (Snd "b", Choice [])
+                    ]
+                )
+          }
+      ]
+  , testCase "P = a?.0 + b!.0" $
+      [ Definition
+          { name = "P"
+          , params = []
+          , specs = []
+          , definition =
+              Choice
+                [ (Rcv "a", Choice [])
+                , (Snd "b", Choice [])
+                ]
+          }
+      ]
+  , testCase "P = a?.0 + b!.0 | X" $
+      [ Definition
+          { name = "P"
+          , params = []
+          , specs = []
+          , definition =
+              Par
+                ( Choice
+                    [ (Rcv "a", Choice [])
+                    , (Snd "b", Choice [])
+                    ]
+                )
+                ( Ident "X" []
+                )
+          }
+      ]
+  , testCase "P = a?.0 + b!.(X | Y)" $
+      [ Definition
+          { name = "P"
+          , params = []
+          , specs = []
+          , definition =
+              Choice
+                [ (Rcv "a", Choice [])
+                ,
+                  ( Snd "b"
+                  , Par
+                      (Ident "X" [])
+                      (Ident "Y" [])
+                  )
+                ]
           }
       ]
   ]

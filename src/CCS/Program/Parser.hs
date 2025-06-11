@@ -11,7 +11,7 @@ import qualified Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void
-import Text.Megaparsec (MonadParsec (eof), Parsec, between, empty, many, optional, sepBy, (<?>))
+import Text.Megaparsec (MonadParsec (eof), Parsec, between, empty, many, optional, sepBy, sepBy1, (<?>))
 import qualified Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -24,6 +24,16 @@ argIdent = lexeme $ do
   first <- lowerChar
   rest <- many alphaNumChar
   return $ T.pack (first : rest)
+
+choiceIdent :: Parser CCS.EventChoice
+choiceIdent = lexeme $ do
+  first <- lowerChar
+  rest <- many alphaNumChar
+  let text = T.pack (first : rest)
+  choice
+    [ CCS.Snd text <$ symbol "!"
+    , CCS.Rcv text <$ symbol "?"
+    ]
 
 procIdent :: Parser Text
 procIdent = lexeme $ do
@@ -61,11 +71,22 @@ procIdentArgs =
 processP :: Parser LTL.Process
 processP = Expr.makeExprParser procTerm operatorTable <?> "process"
 
+ccsChoice :: Parser (CCS.EventChoice, CCS.Process)
+ccsChoice = do
+  evt <- choiceIdent
+  _ <- symbol "."
+  p <- procTerm
+  return (evt, p)
+
+choicesP :: Parser [(CCS.EventChoice, CCS.Process)]
+choicesP = ccsChoice `sepBy1` symbol "+"
+
 procTerm :: Parser CCS.Process
 procTerm =
   choice
     [ between "(" ")" processP
     , CCS.Choice [] <$ symbol "0"
+    , CCS.Choice <$> choicesP
     , CCS.Ident <$> procIdent <*> procIdentArgs
     ]
     <?> "process term"
