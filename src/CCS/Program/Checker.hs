@@ -30,8 +30,7 @@ verifyProgram definitions =
   [ failingSpec
   | def <- definitions
   , (CCS.Ranged () formula) <- def.specs
-  , let ver = makeLts defsMap def.definition
-  , failingSpec <- case ver of
+  , failingSpec <- case makeLts defsMap def.definition of
       Left e -> [TransitionError e]
       Right lts -> [FalsifiedFormula formula | not (Mu.Verify.verify lts formula)]
   ]
