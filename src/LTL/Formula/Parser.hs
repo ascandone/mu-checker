@@ -7,7 +7,7 @@ import qualified Control.Monad.Combinators.Expr as Expr
 import Data.Text (Text)
 import Data.Void
 import qualified LTL.Formula as LTL
-import Parser (Parser, lexeme, lowercaseIdent, parens, sc, symbol)
+import Parser (Parser, lexeme, lowercaseIdent, nestablePrefixes, parens, sc, symbol)
 import Text.Megaparsec (
   MonadParsec (eof),
   (<?>),
@@ -49,7 +49,3 @@ operatorTable =
     , Expr.InfixL $ LTL.imply <$ symbol "->"
     ]
   ]
-
-nestablePrefixes :: [Parser (LTL.Formula -> LTL.Formula)] -> Expr.Operator Parser LTL.Formula
-nestablePrefixes pr =
-  Expr.Prefix (foldr1 (.) <$> Text.Megaparsec.some (choice pr))
