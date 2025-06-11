@@ -1,16 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module CCSLTSTests (suite) where
+module CCSLTSSpec (spec) where
 
 import qualified CCS.LTS as LTS
 import qualified CCS.Parser as P
 import qualified CCS.Program as CCS
 import qualified Data.Map.Strict as Map
 import Data.Text (Text)
-import Test.Hspec (SpecWith, describe, it, shouldBe)
+import Test.Hspec
 
-suite :: SpecWith ()
-suite = describe "CCS LTS" $ do
+spec :: Spec
+spec = describe "CCS LTS" $ do
   it "empty program has no transitions" $ do
     getTransitions [] "0" `shouldBe` []
 

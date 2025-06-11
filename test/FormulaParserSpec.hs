@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module FormulaParserTests (suite) where
+module FormulaParserSpec (spec) where
 
 import qualified Data.Text as Text
 import LTL.Formula (Formula (..), globally)
@@ -12,8 +12,8 @@ testCase src expected =
   it src $ do
     P.parse (Text.pack src) `shouldBe` Right expected
 
-suite :: SpecWith ()
-suite = describe "LTL Parser" $ do
+spec :: Spec
+spec = describe "LTL Parser" $ do
   testCase "x" "x"
 
   testCase "!x" $

@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Redundant $" #-}
-module CCSProgramParserTests (suite) where
+module CCSProgramParserSpec (spec) where
 
 import CCS.Parser (errorBundlePretty)
 import qualified CCS.Parser as P
@@ -12,8 +12,8 @@ import qualified Data.Text as Text
 import qualified Mu.Formula as Mu
 import Test.Hspec
 
-suite :: SpecWith ()
-suite = describe "CCS Parser tests" $ do
+spec :: Spec
+spec = describe "CCS Parser tests" $ do
   testParseProcess "0" $
     Choice []
 

@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module MuFormulaParserTests (suite) where
+module MuFormulaParserSpec (spec) where
 
 import qualified Data.Text as Text
 import Mu.Formula (Evt (..), Formula (..), FormulaEvent (..), box, evtAlways, evtOr)
@@ -21,8 +21,8 @@ snd = Evt . Snd
 tau :: FormulaEvent
 tau = Evt Tau
 
-suite :: SpecWith ()
-suite = describe "MuFormulaParser" $ do
+spec :: Spec
+spec = describe "MuFormulaParser" $ do
   testCase "x" "x"
   testCase "!x" $
     Not "x"

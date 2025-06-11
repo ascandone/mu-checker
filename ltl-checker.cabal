@@ -138,13 +138,14 @@ test-suite test
     hs-source-dirs:   test
 
     -- The entrypoint to the test suite.
-    main-is:          Main.hs
+    main-is:          Spec.hs
     other-modules:
-        LTLCheckerTests,
-        FormulaParserTests,
-        MuFormulaParserTests,
-        CCSProgramParserTests,
-        CCSLTSTests,
+        Paths_ltl_checker,
+        LTLCheckerSpec,
+        FormulaParserSpec,
+        MuFormulaParserSpec,
+        CCSProgramParserSpec,
+        CCSLTSSpec,
 
     -- Test dependencies.
     build-depends:
@@ -153,3 +154,5 @@ test-suite test
         containers >= 0.6.7 && < 0.7,
         text >= 2.0.2 && < 2.1,
         hspec >= 2.11.12
+
+    build-tool-depends: hspec-discover:hspec-discover == 2.*

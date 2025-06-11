@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module LTLCheckerTests (suite) where
+module LTLCheckerSpec (spec) where
 
 import qualified Control.Monad
 import qualified Data.Either
@@ -15,8 +15,8 @@ import qualified LTL.Formula as LTL
 import qualified LTL.Parser as P
 import Test.Hspec
 
-suite :: SpecWith ()
-suite =
+spec :: Spec
+spec =
   describe "LTL checker tests" $ do
     Control.Monad.forM_ tests $ \testCase ->
       fromTC testCase
