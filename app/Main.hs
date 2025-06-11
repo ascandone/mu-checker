@@ -9,10 +9,10 @@ import System.Environment (getArgs)
 
 main :: IO ()
 main = do
-  [arg] <- getArgs
-  content <- Data.Text.IO.readFile arg
-  case CCS.Program.Parser.parse content of
-    Left e -> print e
+  [filePath] <- getArgs
+  content <- Data.Text.IO.readFile filePath
+  case CCS.Program.Parser.parse filePath content of
+    Left e -> putStrLn $ CCS.Program.Parser.errorBundlePretty e
     Right parsed -> do
       Control.Monad.forM_ (CCS.Program.Checker.verifyProgram parsed) $ \failing -> do
         print failing

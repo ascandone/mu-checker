@@ -18,7 +18,7 @@ testCase :: String -> Program -> Tasty.TestTree
 testCase src expected =
   Test.Tasty.HUnit.testCase
     src
-    (P.parse (Text.pack src) @?= Right expected)
+    (P.parse "test" (Text.pack src) @?= Right expected)
 
 tests :: [Tasty.TestTree]
 tests =

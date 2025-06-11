@@ -47,7 +47,7 @@ suite :: Tasty.TestTree
 suite = Tasty.testGroup "CCSLTsTests" tests
 
 parse :: Text -> CCS.Process
-parse = unwrapRight . P.parseProc
+parse = unwrapRight . P.parseProc "proc"
 
 getTransitions :: [(Text, CCS.Definition)] -> Text -> [(Maybe CCS.EventChoice, CCS.Process)]
 getTransitions lst src =

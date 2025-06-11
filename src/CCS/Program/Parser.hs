@@ -1,6 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module CCS.Program.Parser (parse, parseProc) where
+module CCS.Program.Parser (
+  parse,
+  parseProc,
+  Text.Megaparsec.errorBundlePretty,
+) where
 
 import qualified CCS.Program as CCS
 import qualified CCS.Program as LTL
@@ -13,30 +17,28 @@ import Data.Void
 import qualified Mu.Formula as Mu
 import qualified Mu.Formula.Parser
 import Parser (Parser, lexeme, sc, symbol)
-import Text.Megaparsec (MonadParsec (eof), between, many, optional, sepBy, sepBy1, (<?>))
+import Text.Megaparsec (MonadParsec (eof), between, many, optional, sepBy, sepBy1, (<?>), (<|>))
 import qualified Text.Megaparsec
 import Text.Megaparsec.Char
 
-parse :: Text -> Either (Text.Megaparsec.ParseErrorBundle Text Void) CCS.Program
-parse = Text.Megaparsec.parse (sc *> programP <* eof) "ccs program"
+parse :: String -> Text -> Either (Text.Megaparsec.ParseErrorBundle Text Void) CCS.Program
+parse = Text.Megaparsec.parse (sc *> programP <* eof)
 
-parseProc :: Text -> Either (Text.Megaparsec.ParseErrorBundle Text Void) CCS.Process
-parseProc = Text.Megaparsec.parse (sc *> processP <* eof) "ccs program"
+parseProc :: String -> Text -> Either (Text.Megaparsec.ParseErrorBundle Text Void) CCS.Process
+parseProc = Text.Megaparsec.parse (sc *> processP <* eof)
 
-argIdent :: Parser Text
-argIdent = lexeme $ do
+ident :: Parser Text
+ident = do
   first <- lowerChar
-  rest <- many alphaNumChar
+  rest <- many (alphaNumChar <|> char '_')
   return $ T.pack (first : rest)
 
 choiceIdent :: Parser CCS.EventChoice
-choiceIdent = lexeme $ do
-  first <- lowerChar
-  rest <- many alphaNumChar
-  let text = T.pack (first : rest)
+choiceIdent = do
+  name <- ident
   choice
-    [ CCS.Snd text <$ symbol "!"
-    , CCS.Rcv text <$ symbol "?"
+    [ CCS.Snd name <$ symbol "!"
+    , CCS.Rcv name <$ symbol "?"
     ]
 
 procIdent :: Parser Text
@@ -77,14 +79,14 @@ procIdentArgs :: Parser [Text]
 procIdentArgs =
   listOptional $
     lexeme $
-      between "(" ")" (argIdent `sepBy` symbol ",")
+      between "(" ")" (lexeme ident `sepBy` symbol ",")
 
 processP :: Parser LTL.Process
 processP = Expr.makeExprParser procTerm operatorTable <?> "process"
 
 ccsChoice :: Parser (CCS.EventChoice, CCS.Process)
 ccsChoice = do
-  evt <- choiceIdent
+  evt <- lexeme choiceIdent
   _ <- symbol "."
   p <- procTerm
   return (evt, p)
