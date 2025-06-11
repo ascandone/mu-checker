@@ -28,6 +28,30 @@ tests =
           , specs = []
           }
       ]
+  , testCase "Main = X" $
+      [ Definition
+          { name = "Main"
+          , params = []
+          , definition = Ident "X" []
+          , specs = []
+          }
+      ]
+  , testCase "Main = X(a, b)" $
+      [ Definition
+          { name = "Main"
+          , params = []
+          , definition = Ident "X" ["a", "b"]
+          , specs = []
+          }
+      ]
+  , testCase "Main(arg) = 0" $
+      [ Definition
+          { name = "Main"
+          , params = ["arg"]
+          , definition = Choice []
+          , specs = []
+          }
+      ]
   ]
 
 suite :: Tasty.TestTree
