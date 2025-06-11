@@ -61,6 +61,7 @@ library
     exposed-modules:
         Kripke,
         LTL.Formula,
+        LTL.Formula.Parser,
         LTL.Checker,
 
     -- Modules included in this library but not exported.
@@ -75,6 +76,8 @@ library
         containers >= 0.6.7 && < 0.7,
         text >= 2.0.2 && < 2.1,
         mtl >= 2.3.1,
+        megaparsec >= 9.7.0,
+        parser-combinators >= 1.3.0,
 
     -- Directories containing source files.
     hs-source-dirs:   src
@@ -129,6 +132,7 @@ test-suite test
     main-is:          Main.hs
     other-modules:
         CheckerTests,
+        FormulaParserTests,
 
     -- Test dependencies.
     build-depends:
