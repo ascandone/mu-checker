@@ -8,6 +8,7 @@ module Mu.Formula (
   box,
   evtOr,
   evtAlways,
+  nu,
 ) where
 
 import qualified Data.String
@@ -40,7 +41,6 @@ data Formula
   | Not Formula
   | Diamond FormulaEvent Formula
   | Mu Text Formula
-  | Nu Text Formula
   deriving (Show, Eq, Ord)
 
 always :: Formula
@@ -54,6 +54,22 @@ lor x y = Not (Not x `And` Not y)
 
 imply :: Formula -> Formula -> Formula
 imply if_ then_ = Not if_ `lor` then_
+
+nu :: Text -> Formula -> Formula
+nu binding formula =
+  Not (Mu binding (negateBinding binding formula))
+
+negateBinding :: Text -> Formula -> Formula
+negateBinding binding formula =
+  case formula of
+    Atom binding' | binding == binding' -> Not formula
+    Atom _ -> formula
+    Bottom -> formula
+    And l r -> And (negateBinding binding l) (negateBinding binding r)
+    Not f -> Not (negateBinding binding f)
+    Diamond evt f -> Diamond evt (negateBinding binding f)
+    Mu binding' _ | binding == binding' -> formula -- here the old binding is shadowed
+    Mu binding' f' -> Mu binding' (negateBinding binding f')
 
 instance Data.String.IsString Formula where
   fromString = Atom . Test.pack

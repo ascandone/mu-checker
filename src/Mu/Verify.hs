@@ -15,7 +15,6 @@ verify lts@(State _ transitions) formula = case formula of
   Mu.Atom _ -> False -- TODO implement for fixed point
   Mu.Not formula' -> not (verify lts formula')
   Mu.Mu _ _ -> error "TODO mu"
-  Mu.Nu _ _ -> error "TODO nu"
   Mu.Diamond evt formula' ->
     case evt of
       Mu.EvtAnd l r -> verify lts (Mu.Diamond l formula') && verify lts (Mu.Diamond r formula')
