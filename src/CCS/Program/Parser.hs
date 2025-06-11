@@ -2,6 +2,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Use <$>" #-}
+{-# HLINT ignore "Use <$" #-}
 
 module CCS.Program.Parser (
   parse,
@@ -19,8 +20,9 @@ import Data.Void
 import qualified Mu.Formula as Mu
 import qualified Mu.Formula.Parser
 import Parser (Parser, lexeme, lowercaseIdent, parens, sc, symbol, uppercaseIdent)
-import Text.Megaparsec (MonadParsec (eof), many, optional, sepBy, sepBy1, (<?>))
+import Text.Megaparsec (MonadParsec (eof), between, many, optional, sepBy, sepBy1, (<?>))
 import qualified Text.Megaparsec
+import Text.Megaparsec.Char (char)
 
 parse :: String -> Text -> Either (Text.Megaparsec.ParseErrorBundle Text Void) CCS.Program
 parse = Text.Megaparsec.parse (sc *> programP <* eof)
@@ -79,8 +81,26 @@ ccsChoice =
     <* symbol "."
     <*> procTerm
 
+labelsList :: Parser [Text]
+labelsList =
+  choice
+    [ between (char '{') (char '}') $
+        ident `sepBy` symbol ","
+    , (: []) <$> ident
+    ]
+
 procTerm :: Parser CCS.Process
-procTerm =
+procTerm = do
+  term <- procTermUnrestricted
+  mLabels <-
+    choice
+      [ symbol "\\" *> labelsList
+      , return []
+      ]
+  return $ foldr CCS.Restriction term mLabels
+
+procTermUnrestricted :: Parser CCS.Process
+procTermUnrestricted =
   choice
     [ parens processP
     , CCS.Choice [] <$ symbol "0"

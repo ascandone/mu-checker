@@ -4,8 +4,9 @@
 {-# HLINT ignore "Redundant $" #-}
 module CCSProgramParserTests (suite) where
 
-import CCS.Program (Definition (..), EventChoice (..), Process (..), Program)
+import CCS.Program (Definition (..), EventChoice (..), Process (..))
 import qualified CCS.Program as CCS
+import CCS.Program.Parser (errorBundlePretty)
 import qualified CCS.Program.Parser as P
 import qualified Data.Text as Text
 import qualified Mu.Formula as Mu
@@ -14,15 +15,28 @@ import qualified Test.Tasty as Tasty
 import Test.Tasty.HUnit ((@?=))
 import qualified Test.Tasty.HUnit
 
-testCase :: String -> Program -> Tasty.TestTree
-testCase src expected =
-  Test.Tasty.HUnit.testCase
-    src
-    (P.parse "test" (Text.pack src) @?= Right expected)
+testParseProgram :: String -> CCS.Program -> Tasty.TestTree
+testParseProgram src expected =
+  Test.Tasty.HUnit.testCase src $ case P.parse "test" (Text.pack src) of
+    Left e -> error $ errorBundlePretty e
+    Right p -> p @?= expected
+
+testParseProcess :: String -> CCS.Process -> Tasty.TestTree
+testParseProcess src expected =
+  Test.Tasty.HUnit.testCase src $ case P.parseProc "test" (Text.pack src) of
+    Left e -> error $ errorBundlePretty e
+    Right p -> p @?= expected
 
 tests :: [Tasty.TestTree]
 tests =
-  [ testCase "Main = 0" $
+  [ testParseProcess "0" $
+      Choice []
+  , testParseProcess "0\\a" $
+      Restriction "a" (Choice [])
+  , testParseProcess "0\\{a, b}" $
+      Restriction "a" $
+        Restriction "b" (Choice [])
+  , testParseProgram "Main = 0" $
       [ Definition
           { name = "Main"
           , params = []
@@ -30,7 +44,7 @@ tests =
           , specs = []
           }
       ]
-  , testCase "Main = X" $
+  , testParseProgram "Main = X" $
       [ Definition
           { name = "Main"
           , params = []
@@ -38,7 +52,7 @@ tests =
           , specs = []
           }
       ]
-  , testCase "Main = X(a, b)" $
+  , testParseProgram "Main = X(a, b)" $
       [ Definition
           { name = "Main"
           , params = []
@@ -46,7 +60,7 @@ tests =
           , specs = []
           }
       ]
-  , testCase "Main(arg) = 0" $
+  , testParseProgram "Main(arg) = 0" $
       [ Definition
           { name = "Main"
           , params = ["arg"]
@@ -54,7 +68,7 @@ tests =
           , specs = []
           }
       ]
-  , testCase "P = X | Y" $
+  , testParseProgram "P = X | Y" $
       [ Definition
           { name = "P"
           , params = []
@@ -65,7 +79,7 @@ tests =
                 (Ident "Y" [])
           }
       ]
-  , testCase "P = X | (Y | Z)" $
+  , testParseProgram "P = X | (Y | Z)" $
       [ Definition
           { name = "P"
           , params = []
@@ -79,7 +93,7 @@ tests =
                 )
           }
       ]
-  , testCase "P = a?.0" $
+  , testParseProgram "P = a?.0" $
       [ Definition
           { name = "P"
           , params = []
@@ -90,7 +104,7 @@ tests =
                 ]
           }
       ]
-  , testCase "P = a?.0 | b!.0" $ --  TODO parens
+  , testParseProgram "P = a?.0 | b!.0" $ --  TODO parens
       [ Definition
           { name = "P"
           , params = []
@@ -107,7 +121,7 @@ tests =
                 )
           }
       ]
-  , testCase "P = a?.0 + b!.0" $
+  , testParseProgram "P = a?.0 + b!.0" $
       [ Definition
           { name = "P"
           , params = []
@@ -119,7 +133,7 @@ tests =
                 ]
           }
       ]
-  , testCase "P = a?.0 + b!.0 | X" $
+  , testParseProgram "P = a?.0 + b!.0 | X" $
       [ Definition
           { name = "P"
           , params = []
@@ -135,7 +149,7 @@ tests =
                 )
           }
       ]
-  , testCase "P = a?.0 + b!.(X | Y)" $
+  , testParseProgram "P = a?.0 + b!.(X | Y)" $
       [ Definition
           { name = "P"
           , params = []
@@ -152,7 +166,7 @@ tests =
                 ]
           }
       ]
-  , testCase "P = (a?.0 + b!.X) | Y" $
+  , testParseProgram "P = (a?.0 + b!.X) | Y" $
       [ Definition
           { name = "P"
           , params = []
@@ -170,7 +184,7 @@ tests =
                 (Ident "Y" [])
           }
       ]
-  , testCase "P = A\nQ = B" $
+  , testParseProgram "P = A\nQ = B" $
       [ Definition
           { name = "P"
           , params = []
@@ -184,7 +198,7 @@ tests =
           , definition = Ident "B" []
           }
       ]
-  , testCase "@specs <false> x\nP = 0 " $
+  , testParseProgram "@specs <false> x\nP = 0 " $
       [ Definition
           { name = "P"
           , params = []
