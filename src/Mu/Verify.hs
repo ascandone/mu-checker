@@ -23,5 +23,5 @@ verify lts@(State _ transitions) formula = case formula of
       Mu.EvtBottom -> False
       Mu.Evt evt' ->
         any
-          (\(evt'', lts') -> evt' == evt'' && verify lts' formula)
+          (\(evt'', lts') -> evt' == evt'' && verify lts' formula')
           transitions
