@@ -8,7 +8,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void
 import qualified Mu.Formula as Mu
-import Parser (Parser, lexeme, nestablePrefixes, sc, symbol)
+import Parser (Parser, lexeme, nestablePrefixes, parens, sc, symbol)
 import Text.Megaparsec (
   MonadParsec (eof),
   between,
@@ -23,9 +23,6 @@ formulaParser = formula
 
 parse :: Text -> Either (Text.Megaparsec.ParseErrorBundle Text Void) Mu.Formula
 parse = Text.Megaparsec.parse (sc *> formula <* eof) "ltl"
-
-parens :: Parser a -> Parser a
-parens = between (symbol "(") (symbol ")")
 
 ident :: Parser Text
 ident = lexeme $ do

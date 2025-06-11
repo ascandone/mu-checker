@@ -16,8 +16,8 @@ import qualified Data.Text as T
 import Data.Void
 import qualified Mu.Formula as Mu
 import qualified Mu.Formula.Parser
-import Parser (Parser, lexeme, sc, symbol)
-import Text.Megaparsec (MonadParsec (eof), between, many, optional, sepBy, sepBy1, (<?>), (<|>))
+import Parser (Parser, lexeme, parens, sc, symbol)
+import Text.Megaparsec (MonadParsec (eof), many, optional, sepBy, sepBy1, (<?>), (<|>))
 import qualified Text.Megaparsec
 import Text.Megaparsec.Char
 
@@ -78,8 +78,7 @@ listOptional p =
 procIdentArgs :: Parser [Text]
 procIdentArgs =
   listOptional $
-    lexeme $
-      between "(" ")" (lexeme ident `sepBy` symbol ",")
+    parens (lexeme ident `sepBy` symbol ",")
 
 processP :: Parser LTL.Process
 processP = Expr.makeExprParser procTerm operatorTable <?> "process"
@@ -97,7 +96,7 @@ choicesP = ccsChoice `sepBy1` symbol "+"
 procTerm :: Parser CCS.Process
 procTerm =
   choice
-    [ between "(" ")" processP
+    [ parens processP
     , CCS.Choice [] <$ symbol "0"
     , CCS.Choice <$> choicesP
     , CCS.Ident <$> procIdent <*> procIdentArgs

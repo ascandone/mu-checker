@@ -152,6 +152,24 @@ tests =
                 ]
           }
       ]
+  , testCase "P = (a?.0 + b!.X) | Y" $
+      [ Definition
+          { name = "P"
+          , params = []
+          , specs = []
+          , definition =
+              Par
+                ( Choice
+                    [ (Rcv "a", Choice [])
+                    ,
+                      ( Snd "b"
+                      , Ident "X" []
+                      )
+                    ]
+                )
+                (Ident "Y" [])
+          }
+      ]
   , testCase "P = A\nQ = B" $
       [ Definition
           { name = "P"

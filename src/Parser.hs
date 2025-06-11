@@ -6,6 +6,7 @@ module Parser (
   nestablePrefixes,
   sc,
   Parser,
+  parens,
 ) where
 
 import Control.Applicative.Combinators (choice)
@@ -35,3 +36,6 @@ symbol = L.symbol sc
 nestablePrefixes :: [Parser (a -> a)] -> Expr.Operator Parser a
 nestablePrefixes pr =
   Expr.Prefix (foldr1 (.) <$> Text.Megaparsec.some (choice pr))
+
+parens :: Parser a -> Parser a
+parens = Text.Megaparsec.between (symbol "(") (symbol ")")

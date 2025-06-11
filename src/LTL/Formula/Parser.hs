@@ -8,10 +8,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void
 import qualified LTL.Formula as LTL
-import Parser (Parser, lexeme, sc, symbol)
+import Parser (Parser, lexeme, parens, sc, symbol)
 import Text.Megaparsec (
   MonadParsec (eof),
-  between,
   many,
   (<?>),
  )
@@ -20,9 +19,6 @@ import Text.Megaparsec.Char
 
 parse :: Text -> Either (Text.Megaparsec.ParseErrorBundle Text Void) LTL.Formula
 parse = Text.Megaparsec.parse (sc *> formula <* eof) "ltl"
-
-parens :: Parser a -> Parser a
-parens = between (symbol "(") (symbol ")")
 
 ident :: Parser Text
 ident = lexeme $ do
