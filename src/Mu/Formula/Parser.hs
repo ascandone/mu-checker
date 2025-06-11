@@ -32,6 +32,16 @@ ident = lexeme $ do
   rest <- many alphaNumChar
   return $ T.pack (first : rest)
 
+evtIdent :: Parser Mu.FormulaEvent
+evtIdent = lexeme $ do
+  first <- lowerChar
+  rest <- many alphaNumChar
+  let text = T.pack (first : rest)
+  choice
+    [ Mu.Snd text <$ symbol "!"
+    , Mu.Rcv text <$ symbol "?"
+    ]
+
 formula :: Parser Mu.Formula
 formula = Expr.makeExprParser term operatorTable <?> "formula"
 
@@ -71,7 +81,8 @@ eventFormulaTerm =
   choice
     [ Mu.evtAlways <$ symbol "true"
     , Mu.EvtBottom <$ symbol "false"
-    -- TODO evt!, evt?
+    , Mu.Tau <$ symbol "tau"
+    , evtIdent
     ]
     <?> "event formula"
 

@@ -33,6 +33,15 @@ tests =
       Diamond EvtBottom (Diamond EvtBottom "x")
   , testCase "<false || !true> x" $
       Diamond (EvtBottom `evtOr` EvtNot evtAlways) "x"
+  , testCase "<a?> x" $
+      Diamond (Rcv "a") "x"
+  , testCase "<a!> x" $
+      Diamond (Snd "a") "x"
+  , testCase "<a!> <b?> x" $
+      Diamond (Snd "a") $
+        Diamond (Rcv "b") "x"
+  , testCase "<tau> x" $
+      Diamond Tau "x"
   ]
 
 suite :: Tasty.TestTree
