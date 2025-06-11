@@ -50,6 +50,7 @@ operatorTable =
         , Mu.Diamond <$> diamond
         , Mu.box <$> box
         , Mu.Mu <$ symbol "mu" <*> lexeme lowercaseIdent <* symbol "."
+        , Mu.nu <$ symbol "nu" <*> lexeme lowercaseIdent <* symbol "."
         ]
     ]
   ,
