@@ -26,7 +26,7 @@ type DefinitionsMap = Map Text CCS.Definition
 
 verifyDefinitionSpecs :: DefinitionsMap -> CCS.Definition -> Either CCS.LTS.Err [FailingSpec]
 verifyDefinitionSpecs defsMap def = do
-  lts <- makeLts defsMap def.definition
+  let lts = makeLts defsMap def.definition
   vs <- Control.Monad.forM def.specs $ \(CCS.Ranged () formula) -> do
     b <- Mu.Verify.verify lts formula
     return $
@@ -48,10 +48,8 @@ mapChoice evt =
     Just (CCS.Rcv e) -> Mu.Rcv e
     Just (CCS.Snd e) -> Mu.Snd e
 
-makeLts :: DefinitionsMap -> CCS.Process -> Either CCS.LTS.Err (LTS CCS.Process Mu.Evt)
-makeLts defs proc_ = do
-  transitions <- CCS.LTS.getTransitions defs proc_
-  ltsTransitions <- Control.Monad.forM transitions $ \(choice, nextProc) -> do
-    lts' <- makeLts defs nextProc
-    return (mapChoice choice, lts')
-  return $ State proc_ ltsTransitions
+makeLts :: DefinitionsMap -> CCS.Process -> LTS CCS.Process Mu.Evt CCS.LTS.Err
+makeLts defs proc_ =
+  State proc_ $ do
+    transitions <- CCS.LTS.getTransitions defs proc_
+    return [(mapChoice choice, makeLts defs nextProc) | (choice, nextProc) <- transitions]
