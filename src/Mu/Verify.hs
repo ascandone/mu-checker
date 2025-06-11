@@ -3,13 +3,12 @@ module Mu.Verify (
   verify,
 ) where
 
-import Mu.Formula (Formula)
 import qualified Mu.Formula as Mu
 
 data LTS state label
   = State state [(label, LTS state label)]
 
-verify :: (Eq state, Ord state) => LTS state Mu.Evt -> Formula -> Bool
+verify :: (Eq state, Ord state) => LTS state Mu.Evt -> Mu.Formula -> Bool
 verify lts@(State _ transitions) formula = case formula of
   Mu.Bottom -> False
   Mu.And l r -> verify lts l && verify lts r
