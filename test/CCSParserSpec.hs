@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Redundant $" #-}
-module CCSProgramParserSpec (spec) where
+module CCSParserSpec (spec) where
 
 import CCS.Parser (errorBundlePretty)
 import qualified CCS.Parser as P

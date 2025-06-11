@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module MuFormulaParserSpec (spec) where
+module MuParserSpec (spec) where
 
 import qualified Data.Text as Text
 import Mu.Formula (Evt (..), Formula (..), FormulaEvent (..), box, evtAlways, evtOr)

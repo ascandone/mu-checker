@@ -142,9 +142,9 @@ test-suite test
     other-modules:
         Paths_ltl_checker,
         LTLCheckerSpec,
-        FormulaParserSpec,
-        MuFormulaParserSpec,
-        CCSProgramParserSpec,
+        LTLParserSpec,
+        MuParserSpec,
+        CCSParserSpec,
         CCSLTSSpec,
 
     -- Test dependencies.

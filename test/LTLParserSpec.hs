@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module FormulaParserSpec (spec) where
+module LTLParserSpec (spec) where
 
 import qualified Data.Text as Text
 import LTL.Formula (Formula (..), globally)
