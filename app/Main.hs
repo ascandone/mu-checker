@@ -1,8 +1,7 @@
 module Main where
 
-import qualified CCS.Parser
-
 import qualified CCS.Checker
+import qualified CCS.Parser
 import qualified Control.Monad
 import qualified Data.Text.IO
 import System.Environment (getArgs)
