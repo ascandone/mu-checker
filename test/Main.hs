@@ -2,6 +2,7 @@ module Main (main) where
 
 import qualified CheckerTests
 import qualified FormulaParserTests
+import qualified MuFormulaParserTests
 import Test.Tasty (TestTree, defaultMain, testGroup)
 
 main :: IO ()
@@ -13,4 +14,5 @@ tests =
     "Tests"
     [ CheckerTests.suite
     , FormulaParserTests.suite
+    , MuFormulaParserTests.suite
     ]

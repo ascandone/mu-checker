@@ -62,6 +62,8 @@ library
         Kripke,
         LTL.Formula,
         LTL.Formula.Parser,
+        Mu.Formula,
+        Mu.Formula.Parser,
         LTL.Checker,
 
     -- Modules included in this library but not exported.
@@ -133,6 +135,7 @@ test-suite test
     other-modules:
         CheckerTests,
         FormulaParserTests,
+        MuFormulaParserTests,
 
     -- Test dependencies.
     build-depends:

@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module FormulaParserTests (suite) where
+module MuFormulaParserTests (suite) where
 
-import LTL.Formula (Formula (..))
-import qualified LTL.Formula.Parser as P
+import Mu.Formula (Formula (..))
+import qualified Mu.Formula.Parser as P
 import Test.Tasty (testGroup)
 import qualified Test.Tasty as Tasty
 import Test.Tasty.HUnit (testCase, (@?=))
@@ -16,11 +16,9 @@ tests =
       P.parse "!x" @?= Right (Not "x")
   , testCase "double !" $
       P.parse "!!x" @?= Right (Not (Not "x"))
-  , testCase "double X" $
-      P.parse "X X x" @?= Right (Next (Next "x"))
-  , testCase "U" $
-      P.parse "a U b" @?= Right ("a" `Until` "b")
+  , testCase "and, ! prec" $
+      P.parse "!x && !y" @?= Right (Not "x" `And` Not "y")
   ]
 
 suite :: Tasty.TestTree
-suite = testGroup "LTLFormulaTests" tests
+suite = testGroup "MuFormulaParser" tests
