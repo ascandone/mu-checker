@@ -5,8 +5,10 @@
 module CCSProgramParserTests (suite) where
 
 import CCS.Program (Definition (..), EventChoice (..), Process (..), Program)
+import qualified CCS.Program as CCS
 import qualified CCS.Program.Parser as P
 import qualified Data.Text as Text
+import qualified Mu.Formula as Mu
 import Test.Tasty (testGroup)
 import qualified Test.Tasty as Tasty
 import Test.Tasty.HUnit ((@?=))
@@ -148,6 +150,33 @@ tests =
                       (Ident "Y" [])
                   )
                 ]
+          }
+      ]
+  , testCase "P = A\nQ = B" $
+      [ Definition
+          { name = "P"
+          , params = []
+          , specs = []
+          , definition = Ident "A" []
+          }
+      , Definition
+          { name = "Q"
+          , params = []
+          , specs = []
+          , definition = Ident "B" []
+          }
+      ]
+  , testCase "@specs <false> x\nP = 0 " $
+      [ Definition
+          { name = "P"
+          , params = []
+          , specs =
+              [ CCS.Ranged
+                  ()
+                  ( Mu.Diamond Mu.EvtBottom "x"
+                  )
+              ]
+          , definition = Choice []
           }
       ]
   ]

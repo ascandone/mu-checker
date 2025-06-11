@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module CCS.Program.Parser (parse) where
@@ -11,6 +10,8 @@ import qualified Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void
+import qualified Mu.Formula as Mu
+import qualified Mu.Formula.Parser
 import Text.Megaparsec (MonadParsec (eof), Parsec, between, empty, many, optional, sepBy, sepBy1, (<?>))
 import qualified Text.Megaparsec
 import Text.Megaparsec.Char
@@ -44,8 +45,15 @@ procIdent = lexeme $ do
 programP :: Parser [CCS.Definition]
 programP = many definitionP
 
+ranged :: Parser p -> Parser (CCS.Ranged p)
+ranged p = CCS.Ranged () <$> p
+
+specP :: Parser (CCS.Ranged Mu.Formula)
+specP = ranged (symbol "@specs" *> Mu.Formula.Parser.formulaParser)
+
 definitionP :: Parser CCS.Definition
 definitionP = do
+  specs <- many specP
   name <- procIdent
   params <- procIdentArgs
   _ <- symbol "="
@@ -55,7 +63,7 @@ definitionP = do
       { CCS.name = name
       , CCS.params = params
       , CCS.definition = process
-      , CCS.specs = []
+      , CCS.specs = specs
       }
 
 listOptional :: Parser [a] -> Parser [a]

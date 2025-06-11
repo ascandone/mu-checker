@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mu.Formula.Parser (parse) where
+module Mu.Formula.Parser (parse, formulaParser) where
 
 import Control.Applicative.Combinators (choice)
 import qualified Control.Monad.Combinators.Expr as Expr
@@ -19,6 +19,9 @@ import Text.Megaparsec (
 import qualified Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
+
+formulaParser :: Parser Mu.Formula
+formulaParser = formula
 
 parse :: Text -> Either (Text.Megaparsec.ParseErrorBundle Text Void) Mu.Formula
 parse = Text.Megaparsec.parse (formula <* eof) "ltl"
