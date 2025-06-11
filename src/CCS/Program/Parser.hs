@@ -73,21 +73,18 @@ processP :: Parser LTL.Process
 processP = Expr.makeExprParser procTerm operatorTable <?> "process"
 
 ccsChoice :: Parser (CCS.EventChoice, CCS.Process)
-ccsChoice = do
-  evt <- choiceIdent
-  _ <- symbol "."
-  p <- procTerm
-  return (evt, p)
-
-choicesP :: Parser [(CCS.EventChoice, CCS.Process)]
-choicesP = ccsChoice `sepBy1` symbol "+"
+ccsChoice =
+  return (,)
+    <*> choiceIdent
+    <* symbol "."
+    <*> procTerm
 
 procTerm :: Parser CCS.Process
 procTerm =
   choice
     [ parens processP
     , CCS.Choice [] <$ symbol "0"
-    , CCS.Choice <$> choicesP
+    , CCS.Choice <$> ccsChoice `sepBy1` symbol "+"
     , CCS.Ident <$> procIdent <*> procIdentArgs
     ]
     <?> "process term"
