@@ -8,17 +8,15 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void
 import qualified LTL.Formula as LTL
+import Parser (Parser, lexeme, sc, symbol)
 import Text.Megaparsec (
   MonadParsec (eof),
-  Parsec,
   between,
-  empty,
   many,
   (<?>),
  )
 import qualified Text.Megaparsec
 import Text.Megaparsec.Char
-import qualified Text.Megaparsec.Char.Lexer as L
 
 parse :: Text -> Either (Text.Megaparsec.ParseErrorBundle Text Void) LTL.Formula
 parse = Text.Megaparsec.parse (sc *> formula <* eof) "ltl"
@@ -68,20 +66,3 @@ operatorTable =
 nestablePrefixes :: [Parser (LTL.Formula -> LTL.Formula)] -> Expr.Operator Parser LTL.Formula
 nestablePrefixes pr =
   Expr.Prefix (foldr1 (.) <$> Text.Megaparsec.some (choice pr))
-
--- Boilerplate
-
-type Parser = Parsec Void Text
-
-sc :: Parser ()
-sc =
-  L.space
-    space1
-    empty -- Line comments
-    empty -- Block comments
-
-lexeme :: Parser a -> Parser a
-lexeme = L.lexeme sc
-
-symbol :: Text -> Parser Text
-symbol = L.symbol sc

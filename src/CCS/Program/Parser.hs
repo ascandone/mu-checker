@@ -12,10 +12,10 @@ import qualified Data.Text as T
 import Data.Void
 import qualified Mu.Formula as Mu
 import qualified Mu.Formula.Parser
-import Text.Megaparsec (MonadParsec (eof), Parsec, between, empty, many, optional, sepBy, sepBy1, (<?>))
+import Parser (Parser, lexeme, sc, symbol)
+import Text.Megaparsec (MonadParsec (eof), between, many, optional, sepBy, sepBy1, (<?>))
 import qualified Text.Megaparsec
 import Text.Megaparsec.Char
-import qualified Text.Megaparsec.Char.Lexer as L
 
 parse :: Text -> Either (Text.Megaparsec.ParseErrorBundle Text Void) CCS.Program
 parse = Text.Megaparsec.parse (sc *> programP <* eof) "ccs program"
@@ -108,20 +108,3 @@ operatorTable =
     [ Expr.InfixL $ CCS.Par <$ symbol "|"
     ]
   ]
-
--- Boilerplate
-
-type Parser = Parsec Void Text
-
-sc :: Parser ()
-sc =
-  L.space
-    space1
-    empty -- Line comments
-    empty -- Block comments
-
-lexeme :: Parser a -> Parser a
-lexeme = L.lexeme sc
-
-symbol :: Text -> Parser Text
-symbol = L.symbol sc

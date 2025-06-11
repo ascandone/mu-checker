@@ -8,23 +8,21 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void
 import qualified Mu.Formula as Mu
+import Parser (Parser, lexeme, nestablePrefixes, sc, symbol)
 import Text.Megaparsec (
   MonadParsec (eof),
-  Parsec,
   between,
-  empty,
   many,
   (<?>),
  )
 import qualified Text.Megaparsec
 import Text.Megaparsec.Char
-import qualified Text.Megaparsec.Char.Lexer as L
 
 formulaParser :: Parser Mu.Formula
 formulaParser = formula
 
 parse :: Text -> Either (Text.Megaparsec.ParseErrorBundle Text Void) Mu.Formula
-parse = Text.Megaparsec.parse (formula <* eof) "ltl"
+parse = Text.Megaparsec.parse (sc *> formula <* eof) "ltl"
 
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
@@ -107,23 +105,3 @@ evtFormulaOperatorTable =
     , Expr.InfixL $ Mu.evtOr <$ symbol "||"
     ]
   ]
-
--- Boilerplate
-
-type Parser = Parsec Void Text
-nestablePrefixes :: [Parser (a -> a)] -> Expr.Operator Parser a
-nestablePrefixes pr =
-  Expr.Prefix (foldr1 (.) <$> Text.Megaparsec.some (choice pr))
-
-sc :: Parser ()
-sc =
-  L.space
-    space1
-    empty -- Line comments
-    empty -- Block comments
-
-lexeme :: Parser a -> Parser a
-lexeme = L.lexeme sc
-
-symbol :: Text -> Parser Text
-symbol = L.symbol sc
