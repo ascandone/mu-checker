@@ -1,4 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Use <$>" #-}
 
 module CCS.Program.Parser (
   parse,
@@ -49,19 +52,13 @@ specP :: Parser (CCS.Ranged Mu.Formula)
 specP = ranged (symbol "@specs" *> Mu.Formula.Parser.formulaParser)
 
 definitionP :: Parser CCS.Definition
-definitionP = do
-  specs <- many specP
-  name <- procIdent
-  params <- procIdentArgs
-  _ <- symbol "="
-  process <- processP
-  return $
-    CCS.Definition
-      { CCS.name = name
-      , CCS.params = params
-      , CCS.definition = process
-      , CCS.specs = specs
-      }
+definitionP =
+  return CCS.Definition
+    <*> many specP
+    <*> procIdent
+    <*> procIdentArgs
+    <* symbol "="
+    <*> processP
 
 listOptional :: Parser [a] -> Parser [a]
 listOptional p =
