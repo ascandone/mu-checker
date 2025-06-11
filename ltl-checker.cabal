@@ -66,6 +66,7 @@ library
         Mu.Formula.Parser,
         CCS.Program,
         CCS.Program.Parser,
+        CCS.LTS,
         LTL.Checker,
 
     -- Modules included in this library but not exported.
@@ -139,6 +140,7 @@ test-suite test
         FormulaParserTests,
         MuFormulaParserTests,
         CCSProgramParserTests,
+        CCSLTSTests,
 
     -- Test dependencies.
     build-depends:

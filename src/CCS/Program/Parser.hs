@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module CCS.Program.Parser (parse) where
+module CCS.Program.Parser (parse, parseProc) where
 
 import qualified CCS.Program as CCS
 import qualified CCS.Program as LTL
@@ -19,6 +19,9 @@ import qualified Text.Megaparsec.Char.Lexer as L
 
 parse :: Text -> Either (Text.Megaparsec.ParseErrorBundle Text Void) CCS.Program
 parse = Text.Megaparsec.parse (sc *> programP <* eof) "ccs program"
+
+parseProc :: Text -> Either (Text.Megaparsec.ParseErrorBundle Text Void) CCS.Process
+parseProc = Text.Megaparsec.parse (sc *> processP <* eof) "ccs program"
 
 argIdent :: Parser Text
 argIdent = lexeme $ do

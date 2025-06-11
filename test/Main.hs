@@ -1,5 +1,6 @@
 module Main (main) where
 
+import qualified CCSLTSTests
 import qualified CCSProgramParserTests
 import qualified CheckerTests
 import qualified FormulaParserTests
@@ -17,4 +18,5 @@ tests =
     , FormulaParserTests.suite
     , MuFormulaParserTests.suite
     , CCSProgramParserTests.suite
+    , CCSLTSTests.suite
     ]
