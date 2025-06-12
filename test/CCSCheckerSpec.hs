@@ -126,9 +126,16 @@ spec = do
     it "allows to navigate forward" $ do
       -- TODO fix parser
       let p =
-            "@specs mu x . ((<a!> true) || (<a?> x)) \
+            "@specs mu x . (<a!> true || <a?> x) \
             \Main = a?.a?.a!.0"
       verifyProgram p `shouldBe` True
+
+    it "detects loops" $ do
+      let p =
+            "P = a?.a?.P \
+            \@specs mu x . (<a!> true || <a?> x) \
+            \Main = P"
+      verifyProgram p `shouldBe` False
 
 verifyProgram :: Text -> Bool
 verifyProgram src =
