@@ -68,6 +68,7 @@ library
         CCS.Program,
         CCS.Parser,
         CCS.LTS,
+        CCS.Pretty,
         LTL.Checker,
 
     -- Modules included in this library but not exported.
@@ -148,6 +149,7 @@ test-suite test
         CCSParserSpec,
         CCSLTSSpec,
         CCSCheckerSpec,
+        CCSPrettySpec,
 
     -- Test dependencies.
     build-depends:

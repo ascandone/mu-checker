@@ -4,6 +4,7 @@ module Main (main) where
 
 import qualified CCS.LTS
 import qualified CCS.Parser
+import qualified CCS.Pretty
 import qualified CCS.Program
 import qualified Control.Monad
 import Data.Map.Strict (Map)
@@ -43,7 +44,7 @@ dbgLoop defs init_ = do
   trs <- unwrapEither (CCS.LTS.getTransitions defs init_) show
 
   Control.Monad.forM_ (zip [1 :: Int ..] trs) $ \(index, (evt, nextProc)) ->
-    putStrLn $ show index ++ ") " ++ stringifyEvt evt ++ " => " ++ show nextProc
+    putStrLn $ show index ++ ") " ++ stringifyEvt evt ++ " => " ++ Text.unpack (CCS.Pretty.pretty nextProc)
   putStr "> "
   hFlush stdout
 
