@@ -24,7 +24,7 @@ data VisitingState
 type MuEnv = Map Text (Set CCS.Process)
 
 data State = State
-  { approxCache :: Map (MuEnv, CCS.Process, Mu.Formula, Set CCS.Process) VisitingState
+  { approxCache :: Map CCS.Process VisitingState
   , defsMap :: DefinitionsMap
   }
 
@@ -35,38 +35,37 @@ type DefinitionsMap = Map Text CCS.Definition
 newtype FailingSpec
   = FalsifiedFormula Mu.Formula
 
-cacheApprox ::
-  (MuEnv -> CCS.Process -> Mu.Formula -> Set CCS.Process -> StateM (Set CCS.Process)) ->
-  MuEnv ->
-  CCS.Process ->
-  Mu.Formula ->
-  Set CCS.Process ->
-  StateM (Set CCS.Process)
-cacheApprox f muEnv proc_ formula approx = do
-  let key = (muEnv, proc_, formula, approx)
-  cacheLookup <- State.gets (\s -> Map.lookup key s.approxCache)
-  case cacheLookup of
-    Just (Visited v) -> return v
-    Just Visiting -> return Set.empty
-    Nothing -> do
-      State.modify $ \s -> s{approxCache = Map.insert key Visiting s.approxCache}
-      v <- f muEnv proc_ formula approx
-      State.modify $ \s -> s{approxCache = Map.insert key (Visited v) s.approxCache}
-      return v
-
 -- | All the new states reachable from this state that satisfy the formula (given this approx)
-improveApprox :: MuEnv -> CCS.Process -> Mu.Formula -> Set CCS.Process -> StateM (Set CCS.Process)
-improveApprox = cacheApprox $ \muEnv proc_ formula approx -> do
-  let go newProc = improveApprox muEnv newProc formula approx
-  verified <- verify muEnv proc_ formula
-  transitions <- getTransitions proc_
-  vs <- Control.Monad.forM transitions $ \(_evt, proc') ->
-    go proc'
-  let base =
-        if verified
-          then proc_ `Set.insert` approx
-          else approx
-  return $ foldr Set.union base vs
+improveApprox :: MuEnv -> CCS.Process -> Mu.Formula -> StateM (Set CCS.Process)
+improveApprox muEnv initialProc formula = do
+  oldState <- State.get
+  State.modify $ \s -> s{approxCache = Map.empty}
+  out <- visit initialProc
+  State.put oldState
+  return out
+ where
+  visit proc_ = do
+    let key = proc_
+    cacheLookup <- State.gets (\s -> Map.lookup key s.approxCache)
+    case cacheLookup of
+      Just (Visited v) -> return v
+      Just Visiting -> return Set.empty
+      Nothing -> do
+        State.modify $ \s -> s{approxCache = Map.insert key Visiting s.approxCache}
+        v <- visit__raw proc_
+        State.modify $ \s -> s{approxCache = Map.insert key (Visited v) s.approxCache}
+        return v
+
+  visit__raw proc_ = do
+    verified <- verify muEnv proc_ formula
+    transitions <- getTransitions proc_
+    vs <- Control.Monad.forM transitions $ \(_evt, proc') ->
+      visit proc'
+    let base =
+          if verified
+            then Set.fromList [proc_]
+            else Set.empty
+    return $ foldr Set.union base vs
 
 verify :: MuEnv -> CCS.Process -> Mu.Formula -> StateM Bool
 verify muEnv proc_ formula = do
@@ -89,7 +88,7 @@ verify muEnv proc_ formula = do
       -- TODO refactor as "findFixPoint" for perf reasons
       fixPoint <- findGreatestFixpoint Set.empty $ \currentApprox ->
         let muEnv' = Map.insert binding currentApprox muEnv
-         in improveApprox muEnv' proc_ body currentApprox
+         in improveApprox muEnv' proc_ body
       return $ proc_ `Set.member` fixPoint
     Mu.Diamond evt formula' ->
       case evt of
@@ -146,9 +145,9 @@ verifyDefinitionSpecs def = do
     return ([FalsifiedFormula formula | not b])
   return $ concat vs
 
-findGreatestFixpoint :: (Eq t, Show t) => t -> (t -> StateM t) -> StateM t
-findGreatestFixpoint x f = do
-  next <- f x
-  if next == x
-    then return next
-    else findGreatestFixpoint next f
+findGreatestFixpoint :: (Eq a, Ord a) => Set a -> (Set a -> StateM (Set a)) -> StateM (Set a)
+findGreatestFixpoint initialSet getNewElems = do
+  newAdditions <- getNewElems initialSet
+  if newAdditions `Set.isSubsetOf` initialSet
+    then return initialSet
+    else findGreatestFixpoint (initialSet `Set.union` newAdditions) getNewElems
