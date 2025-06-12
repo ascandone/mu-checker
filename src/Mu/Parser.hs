@@ -58,6 +58,12 @@ operatorTable =
     , Expr.InfixL $ Mu.lor <$ symbol "||"
     , Expr.InfixL $ Mu.imply <$ symbol "->"
     ]
+  ,
+    [ nestablePrefixes
+        [ Mu.Mu <$ symbol "mu" <*> lexeme lowercaseIdent <* symbol "."
+        , Mu.nu <$ symbol "nu" <*> lexeme lowercaseIdent <* symbol "."
+        ]
+    ]
   ]
 
 -- Evt

@@ -66,6 +66,10 @@ spec = do
     Mu "x" $
       Mu "y" "z"
 
+  testCase "mu x. a && b" $
+    Mu "x" $
+      "a" `And` "b"
+
   testCase "! mu a . b" $
     Not $
       Mu "a" "b"
