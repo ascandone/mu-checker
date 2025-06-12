@@ -43,7 +43,7 @@ getTransitions defs proc_ =
       return (leftSide ++ rightSide ++ handshakes)
     CCS.Restriction label proc' -> do
       transitions <- getTransitions defs proc'
-      Right $ filter (unrestricted label) transitions
+      Right [(evt, CCS.Restriction label nextProc) | tr@(evt, nextProc) <- transitions, unrestricted label tr]
 
 getHandshakes :: [(Maybe CCS.EventChoice, CCS.Process)] -> [(Maybe CCS.EventChoice, CCS.Process)] -> [(Maybe a, CCS.Process)]
 getHandshakes leftTransitions rightTransitions =
