@@ -85,7 +85,6 @@ verify muEnv proc_ formula = do
       b <- verify_ formula'
       return $ not b
     Mu.Mu binding body -> do
-      -- TODO refactor as "findFixPoint" for perf reasons
       fixPoint <- findGreatestFixpoint Set.empty $ \currentApprox ->
         improveApprox muEnv proc_ binding body currentApprox
       return $ proc_ `Set.member` fixPoint
