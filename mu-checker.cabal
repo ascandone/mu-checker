@@ -75,9 +75,9 @@ library
 
     -- Other library packages from which modules are imported.
     build-depends:
-        base >=4.17.2.1,
+        base >=4.21.0.0,
         containers >= 0.6.7 && < 0.7,
-        text >= 2.0.2 && < 2.1,
+        text >= 2.0.2,
         mtl >= 2.3.1,
         megaparsec >= 9.7.0,
         parser-combinators >= 1.3.0,
@@ -104,10 +104,10 @@ executable mu-checker
     -- Other library packages from which modules are imported.
     build-depends:
         mu-checker,
-        base >=4.17.2.1,
-        containers ^>= 0.6.7,
-        mtl ^>= 2.3.1,
-        text ^>= 2.0.2,
+        base >=4.21.0.0,
+        containers >= 0.6.7,
+        mtl >= 2.3.1,
+        text >= 2.0.2,
 
     -- Directories containing source files.
     hs-source-dirs:   app
@@ -149,9 +149,9 @@ test-suite test
     -- Test dependencies.
     build-depends:
         mu-checker,
-        base >=4.17.2.1,
-        containers ^>= 0.6.7,
-        text ^>= 2.0.2,
-        hspec ^>= 2.11.12
+        base >=4.21.0.0,
+        containers >= 0.6.7,
+        text >= 2.0.2,
+        hspec >= 2.11.12
 
     build-tool-depends: hspec-discover:hspec-discover == 2.*
