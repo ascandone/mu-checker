@@ -67,7 +67,6 @@ library
         Mu.Verify,
         CCS.Program,
         CCS.Parser,
-        CCS.Checker,
         CCS.LTS,
         LTL.Checker,
 

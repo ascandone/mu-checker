@@ -1,19 +1,27 @@
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Mu.Verify (
-  LTS (..),
-  verify,
+  verifyProgram,
+  FailingSpec (..),
 ) where
 
+import qualified CCS.LTS as LTS
+import qualified CCS.Program as CCS
 import qualified Control.Monad
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
+import Data.Text (Text)
 import qualified Mu.Formula as Mu
 
-data LTS state label err
-  = State state (Either err [(label, LTS state label err)])
+type DefinitionsMap = Map Text CCS.Definition
 
-verify :: (Eq state, Ord state) => LTS state Mu.Evt err -> Mu.Formula -> Either err Bool
-verify lts@(State _ transitions_) formula = do
-  transitions <- transitions_
+newtype FailingSpec
+  = FalsifiedFormula Mu.Formula
+
+verify :: LTS -> Mu.Formula -> Either LTS.Err Bool
+verify lts formula = do
+  transitions <- getTransitions lts
   case formula of
     Mu.Bottom -> Right False
     Mu.And l r -> do
@@ -43,3 +51,35 @@ verify lts@(State _ transitions_) formula = do
             b <- verify lts' formula'
             Right $ evt' == evt'' && b
           Right $ or bools
+
+getTransitions :: LTS -> Either LTS.Err [(Mu.Evt, LTS)]
+getTransitions lts = do
+  transitions <- LTS.getTransitions lts._defsMap lts._process
+  return [(mapChoice evt, lts{_process = proc_}) | (evt, proc_) <- transitions]
+
+mapChoice :: Maybe CCS.EventChoice -> Mu.Evt
+mapChoice evt =
+  case evt of
+    Nothing -> Mu.Tau
+    Just (CCS.Rcv e) -> Mu.Rcv e
+    Just (CCS.Snd e) -> Mu.Snd e
+
+verifyProgram :: CCS.Program -> [(CCS.Definition, Either LTS.Err [FailingSpec])]
+verifyProgram definitions = [(def, verifyDefinitionSpecs defsMap def) | def <- definitions]
+ where
+  defsMap :: DefinitionsMap
+  defsMap = Map.fromList [(def.name, def) | def <- definitions]
+
+data LTS
+  = State
+  { _process :: CCS.Process
+  , _defsMap :: DefinitionsMap
+  }
+
+verifyDefinitionSpecs :: DefinitionsMap -> CCS.Definition -> Either LTS.Err [FailingSpec]
+verifyDefinitionSpecs defsMap_ def = do
+  vs <- Control.Monad.forM def.specs $ \(CCS.Ranged () formula) -> do
+    let lts = State{_process = def.definition, _defsMap = defsMap_}
+    b <- Mu.Verify.verify lts formula
+    return ([FalsifiedFormula formula | not b])
+  Right $ concat vs

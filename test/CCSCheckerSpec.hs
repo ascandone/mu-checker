@@ -2,10 +2,10 @@
 
 module CCSCheckerSpec (spec) where
 
-import qualified CCS.Checker
 import qualified CCS.Parser
 import Data.Function ((&))
 import Data.Text (Text)
+import qualified Mu.Verify
 import Test.Hspec
 
 spec :: Spec
@@ -109,7 +109,7 @@ verifyProgram src =
   src
     & CCS.Parser.parse "test"
     & unwrapRight
-    & CCS.Checker.verifyProgram
+    & Mu.Verify.verifyProgram
     & all (\(_, failedSpecs) -> null $ unwrapRight failedSpecs)
 
 unwrapRight :: (Show a) => Either a b -> b
