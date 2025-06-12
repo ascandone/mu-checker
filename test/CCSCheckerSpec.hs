@@ -104,6 +104,32 @@ spec = do
           \Main = 0"
     verifyProgram p `shouldBe` True
 
+  describe "fix point operator" $ do
+    it "behaves as the body when binding is unused" $ do
+      let p =
+            "@specs mu x . true\
+            \Main = 0"
+      verifyProgram p `shouldBe` True
+
+    it "the binding is false initially" $ do
+      let p =
+            "@specs mu x . x \
+            \Main = 0"
+      verifyProgram p `shouldBe` False
+
+    it "the binding is false initially" $ do
+      let p =
+            "@specs mu x . x \
+            \Main = 0"
+      verifyProgram p `shouldBe` False
+
+    it "allows to navigate forward" $ do
+      -- TODO fix parser
+      let p =
+            "@specs mu x . ((<a!> true) || (<a?> x)) \
+            \Main = a?.a?.a!.0"
+      verifyProgram p `shouldBe` True
+
 verifyProgram :: Text -> Bool
 verifyProgram src =
   src

@@ -11,6 +11,8 @@ import qualified CCS.Program as CCS
 import qualified Control.Monad
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import Data.Set (Set)
+import qualified Data.Set as Set
 import Data.Text (Text)
 import qualified Mu.Formula as Mu
 
@@ -18,6 +20,36 @@ type DefinitionsMap = Map Text CCS.Definition
 
 newtype FailingSpec
   = FalsifiedFormula Mu.Formula
+
+-- | All the new states reachable from this state that satisfy the formula (given this approx)
+navigateFixPoint :: Set CCS.Process -> LTS -> Text -> Mu.Formula -> Either LTS.Err [CCS.Process]
+navigateFixPoint approx lts binding formula = do
+  -- TODO avoid inf looping
+  let bindingValue =
+        if lts._process `Set.member` approx
+          then Mu.always
+          else Mu.Bottom
+
+  let substFormula = Mu.mapBinding (const bindingValue) binding formula
+  verified <- verify lts substFormula
+
+  transitions <- getTransitions lts -- TODO this could be cached in the LTS struct?
+  vs <- Control.Monad.forM transitions $ \(_evt, lts') ->
+    navigateFixPoint approx lts' binding formula
+  return $
+    if verified && not (lts._process `Set.member` approx)
+      then lts._process : concat vs
+      else concat vs
+
+findFixPoint :: Set CCS.Process -> LTS -> Text -> Mu.Formula -> Either LTS.Err (Set CCS.Process)
+findFixPoint approx lts binding formula = do
+  -- TODO is this lazy enough?
+  approxDiff <- navigateFixPoint approx lts binding formula
+  case approxDiff of
+    [] -> return approx
+    _ : _ ->
+      let newApprox = foldr Set.insert Set.empty approxDiff
+       in findFixPoint newApprox lts binding formula
 
 verify :: LTS -> Mu.Formula -> Either LTS.Err Bool
 verify lts formula = do
@@ -28,11 +60,14 @@ verify lts formula = do
       l' <- verify lts l
       r' <- verify lts r
       Right (l' && r')
-    Mu.Atom _ -> Right False -- TODO implement for fixed point
+    Mu.Atom bin -> error $ "UNBOUNDE BINDING" ++ show bin
     Mu.Not formula' -> do
       b <- verify lts formula'
       Right $ not b
-    Mu.Mu _ _ -> error "TODO mu"
+    Mu.Mu binding body -> do
+      -- TODO refactor as "findFixPoint" for perf reasons
+      fixPoint <- findFixPoint Set.empty lts binding body
+      return $ lts._process `Set.member` fixPoint
     Mu.Diamond evt formula' ->
       case evt of
         Mu.EvtAnd l r -> do

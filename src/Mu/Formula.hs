@@ -9,6 +9,7 @@ module Mu.Formula (
   evtOr,
   evtBottom,
   nu,
+  mapBinding,
 ) where
 
 import qualified Data.String
@@ -60,16 +61,21 @@ nu binding formula =
   Not (Mu binding (negateBinding binding formula))
 
 negateBinding :: Text -> Formula -> Formula
-negateBinding binding formula =
+negateBinding = mapBinding Not
+
+mapBinding :: (Formula -> Formula) -> Text -> Formula -> Formula
+mapBinding mapper binding formula =
   case formula of
-    Atom binding' | binding == binding' -> Not formula
+    Atom binding' | binding == binding' -> mapper formula
+    Mu binding' _ | binding == binding' -> formula -- here the old binding is shadowed
     Atom _ -> formula
     Bottom -> formula
-    And l r -> And (negateBinding binding l) (negateBinding binding r)
-    Not f -> Not (negateBinding binding f)
-    Diamond evt f -> Diamond evt (negateBinding binding f)
-    Mu binding' _ | binding == binding' -> formula -- here the old binding is shadowed
-    Mu binding' f' -> Mu binding' (negateBinding binding f')
+    And l r -> And (mapBinding_ binding l) (mapBinding_ binding r)
+    Not f -> Not (mapBinding_ binding f)
+    Diamond evt f -> Diamond evt (mapBinding_ binding f)
+    Mu binding' f' -> Mu binding' (mapBinding_ binding f')
+ where
+  mapBinding_ = mapBinding mapper
 
 instance Data.String.IsString Formula where
   fromString = Atom . Test.pack
