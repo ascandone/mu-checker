@@ -1,7 +1,4 @@
 {-# LANGUAGE OverloadedRecordDot #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Use camelCase" #-}
 
 module Mu.Checker (
   verifyProgram,
@@ -11,6 +8,7 @@ module Mu.Checker (
 import qualified CCS.LTS as LTS
 import qualified CCS.Program as CCS
 import qualified Control.Monad
+import Control.Monad.Error.Class (liftEither)
 import qualified Control.Monad.State as State
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
@@ -23,41 +21,59 @@ data VisitingState
   = Visited (Set CCS.Process)
   | Visiting
 
-type Cache = Map (CCS.Process, Text, Mu.Formula, Set CCS.Process) VisitingState
+type MuEnv = Map Text (Set CCS.Process)
 
-initialCache :: Cache
-initialCache = Map.empty
+data State = State
+  { approxCache :: Map (MuEnv, CCS.Process, Mu.Formula, Set CCS.Process) VisitingState
+  , defsMap :: DefinitionsMap
+  }
 
-type CacheStateT = State.StateT Cache (Either LTS.Err)
+type StateM = State.StateT State (Either LTS.Err)
 
 type DefinitionsMap = Map Text CCS.Definition
-type MuEnv = Map Text (Set CCS.Process)
 
 newtype FailingSpec
   = FalsifiedFormula Mu.Formula
 
+cacheApprox ::
+  (MuEnv -> CCS.Process -> Mu.Formula -> Set CCS.Process -> StateM (Set CCS.Process)) ->
+  MuEnv ->
+  CCS.Process ->
+  Mu.Formula ->
+  Set CCS.Process ->
+  StateM (Set CCS.Process)
+cacheApprox f muEnv proc_ formula approx = do
+  let key = (muEnv, proc_, formula, approx)
+  cacheLookup <- State.gets (\s -> Map.lookup key s.approxCache)
+  case cacheLookup of
+    Just (Visited v) -> return v
+    Just Visiting -> return Set.empty
+    Nothing -> do
+      State.modify $ \s -> s{approxCache = Map.insert key Visiting s.approxCache}
+      v <- f muEnv proc_ formula approx
+      State.modify $ \s -> s{approxCache = Map.insert key (Visited v) s.approxCache}
+      return v
+
 -- | All the new states reachable from this state that satisfy the formula (given this approx)
-improveApprox :: LTS -> Text -> Mu.Formula -> Set CCS.Process -> CacheStateT (Set CCS.Process)
-improveApprox = cache $ \lts binding formula approx -> do
-  let muEnv = Map.insert binding approx Map.empty
-  verified <- verify muEnv lts formula
-
-  transitions <- State.lift $ getTransitions lts -- TODO this could be cached in the LTS struct?
-  vs <- Control.Monad.forM transitions $ \(_evt, lts') ->
-    improveApprox lts' binding formula approx
-
+improveApprox :: MuEnv -> CCS.Process -> Mu.Formula -> Set CCS.Process -> StateM (Set CCS.Process)
+improveApprox = cacheApprox $ \muEnv proc_ formula approx -> do
+  let go newProc = improveApprox muEnv newProc formula approx
+  verified <- verify muEnv proc_ formula
+  transitions <- getTransitions proc_
+  vs <- Control.Monad.forM transitions $ \(_evt, proc') ->
+    go proc'
   let base =
         if verified
-          then lts._process `Set.insert` approx
+          then proc_ `Set.insert` approx
           else approx
   return $ foldr Set.union base vs
 
-verify :: MuEnv -> LTS -> Mu.Formula -> CacheStateT Bool
-verify muEnv lts formula = do
-  let verify_ = verify muEnv lts
-  transitions <- State.lift $ getTransitions lts
+verify :: MuEnv -> CCS.Process -> Mu.Formula -> StateM Bool
+verify muEnv proc_ formula = do
+  let verify_ = verify muEnv proc_
+  transitions <- getTransitions proc_
   case formula of
-    Mu.Not (Mu.Not formula') -> verify muEnv lts formula'
+    Mu.Not (Mu.Not formula') -> verify muEnv proc_ formula'
     Mu.Bottom -> return False
     Mu.And l r -> do
       l' <- verify_ l
@@ -65,14 +81,16 @@ verify muEnv lts formula = do
       return (l' && r')
     Mu.Atom bin -> return $ case Map.lookup bin muEnv of
       Nothing -> False
-      Just s -> lts._process `Set.member` s
+      Just s -> proc_ `Set.member` s
     Mu.Not formula' -> do
       b <- verify_ formula'
       return $ not b
     Mu.Mu binding body -> do
       -- TODO refactor as "findFixPoint" for perf reasons
-      fixPoint <- findGreatestFixpoint (improveApprox lts binding body) Set.empty
-      return $ lts._process `Set.member` fixPoint
+      fixPoint <- findGreatestFixpoint Set.empty $ \currentApprox ->
+        let muEnv' = Map.insert binding currentApprox muEnv
+         in improveApprox muEnv' proc_ body currentApprox
+      return $ proc_ `Set.member` fixPoint
     Mu.Diamond evt formula' ->
       case evt of
         Mu.EvtAnd l r -> do
@@ -95,11 +113,13 @@ verify muEnv lts formula = do
               return $ evt' == evt'' && b
           return $ or bools
 
-getTransitions :: LTS -> Either LTS.Err [(Mu.Evt, LTS)]
-getTransitions lts = do
-  transitions <- LTS.getTransitions lts._defsMap lts._process
-  return [(mapChoice evt, lts{_process = proc_}) | (evt, proc_) <- transitions]
+getTransitions :: CCS.Process -> StateM [(Mu.Evt, CCS.Process)]
+getTransitions proc_ = do
+  defsMap_ <- State.gets defsMap
+  transitions <- liftEither $ LTS.getTransitions defsMap_ proc_
+  return [(mapChoice evt, proc_') | (evt, proc_') <- transitions]
 
+-- TODO use the same datatype to avoid casting
 mapChoice :: Maybe CCS.EventChoice -> Mu.Evt
 mapChoice evt =
   case evt of
@@ -109,49 +129,26 @@ mapChoice evt =
 
 verifyProgram :: CCS.Program -> [(CCS.Definition, Either LTS.Err [FailingSpec])]
 verifyProgram definitions =
-  [ (def, fst <$> State.runStateT (verifyDefinitionSpecs defsMap def) initialCache)
+  [ (def, fst <$> State.runStateT (verifyDefinitionSpecs def) initialState)
   | def <- definitions
   ]
  where
-  defsMap :: DefinitionsMap
-  defsMap = Map.fromList [(def.name, def) | def <- definitions]
+  initialState =
+    State
+      { defsMap = Map.fromList [(def.name, def) | def <- definitions]
+      , approxCache = Map.empty
+      }
 
-data LTS
-  = State
-  { _process :: CCS.Process
-  , _defsMap :: DefinitionsMap
-  }
-
-verifyDefinitionSpecs :: DefinitionsMap -> CCS.Definition -> CacheStateT [FailingSpec]
-verifyDefinitionSpecs defsMap_ def = do
+verifyDefinitionSpecs :: CCS.Definition -> StateM [FailingSpec]
+verifyDefinitionSpecs def = do
   vs <- Control.Monad.forM def.specs $ \(CCS.Ranged () formula) -> do
-    let lts = State{_process = def.definition, _defsMap = defsMap_}
-    b <- Mu.Checker.verify Map.empty lts formula
+    b <- Mu.Checker.verify Map.empty def.definition formula
     return ([FalsifiedFormula formula | not b])
   return $ concat vs
 
-findGreatestFixpoint :: (Eq t) => (t -> CacheStateT t) -> t -> CacheStateT t
-findGreatestFixpoint f x = do
+findGreatestFixpoint :: (Eq t, Show t) => t -> (t -> StateM t) -> StateM t
+findGreatestFixpoint x f = do
   next <- f x
   if next == x
     then return next
-    else findGreatestFixpoint f next
-
-cache ::
-  (LTS -> Text -> Mu.Formula -> Set CCS.Process -> CacheStateT (Set CCS.Process)) ->
-  LTS ->
-  Text ->
-  Mu.Formula ->
-  Set CCS.Process ->
-  CacheStateT (Set CCS.Process)
-cache f lts binding formula approx = do
-  let key = (lts._process, binding, formula, approx)
-  cacheLookup <- State.gets (Map.lookup key)
-  case cacheLookup of
-    Just (Visited v) -> return v
-    Just Visiting -> return Set.empty
-    Nothing -> do
-      State.modify $ Map.insert key Visiting
-      v <- f lts binding formula approx
-      State.modify $ Map.insert key (Visited v)
-      return v
+    else findGreatestFixpoint next f
