@@ -12,8 +12,8 @@ import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO
-import Mu.Verify (FailingSpec (FalsifiedFormula))
-import qualified Mu.Verify
+import Mu.Checker (FailingSpec (FalsifiedFormula))
+import qualified Mu.Checker
 import System.Environment (getArgs)
 import System.Exit (exitFailure)
 import System.IO (hFlush, stdout)
@@ -26,7 +26,7 @@ parseFilePath filePath = do
 runFile :: String -> IO ()
 runFile filePath = do
   parsed <- parseFilePath filePath
-  Control.Monad.forM_ (Mu.Verify.verifyProgram parsed) $
+  Control.Monad.forM_ (Mu.Checker.verifyProgram parsed) $
     \(def, e) -> case e of
       Left err -> print err
       Right failingsSpecs ->

@@ -8,8 +8,8 @@ import qualified Data.Either
 import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
 import Data.Text (Text)
-import qualified Kripke
 import LTL.Checker (VerificationResult (..), check)
+import qualified LTL.Checker
 import LTL.Formula (Formula)
 import qualified LTL.Formula as LTL
 import qualified LTL.Parser as P
@@ -222,10 +222,10 @@ fromTC tc = it tc.label $ check k tc.formula `shouldBe` tc.expected
     Nothing -> False
     Just xs -> state `elem` xs
   k =
-    Kripke.Kripke
-      { Kripke.initial = tc.initial
-      , Kripke.transitions = transitions'
-      , Kripke.interpret = interpret'
+    LTL.Checker.Kripke
+      { LTL.Checker.initial = tc.initial
+      , LTL.Checker.transitions = transitions'
+      , LTL.Checker.interpret = interpret'
       }
 
 parse :: Text -> Formula

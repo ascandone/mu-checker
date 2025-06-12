@@ -3,7 +3,7 @@
 
 {-# HLINT ignore "Use camelCase" #-}
 
-module Mu.Verify (
+module Mu.Checker (
   verifyProgram,
   FailingSpec (..),
 ) where
@@ -137,7 +137,7 @@ verifyDefinitionSpecs :: DefinitionsMap -> CCS.Definition -> CacheStateT [Failin
 verifyDefinitionSpecs defsMap_ def = do
   vs <- Control.Monad.forM def.specs $ \(CCS.Ranged () formula) -> do
     let lts = State{_process = def.definition, _defsMap = defsMap_}
-    b <- Mu.Verify.verify Map.empty lts formula
+    b <- Mu.Checker.verify Map.empty lts formula
     return ([FalsifiedFormula formula | not b])
   return $ concat vs
 

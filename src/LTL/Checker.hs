@@ -1,6 +1,11 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 
-module LTL.Checker (check, VerificationResult (..)) where
+module LTL.Checker (
+  check,
+  VerificationResult (..),
+  Kripke (..),
+) where
 
 import qualified Control.Monad
 import qualified Control.Monad.State.Strict as State
@@ -8,16 +13,20 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import qualified Data.Maybe
 import Data.Text (Text)
-import Kripke (Kripke)
-import qualified Kripke
 import qualified LTL.Formula as LTL
+
+data Kripke s prop = Kripke
+  { initial :: [s]
+  , transitions :: s -> [s]
+  , interpret :: prop -> s -> Bool
+  }
 
 -- | Check that the formula is verified in the given Kripke structure
 check :: (Eq state, Ord state) => Kripke state Text -> LTL.Formula -> VerificationResult state
 check k f = State.evalState (vall <$> vs) initialCache
  where
   vs =
-    Control.Monad.forM (Kripke.initial k) $ \s ->
+    Control.Monad.forM (initial k) $ \s ->
       kripke s `verifyAt` f
 
   kripke s =
