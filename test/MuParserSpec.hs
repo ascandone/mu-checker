@@ -3,7 +3,7 @@
 module MuParserSpec (spec) where
 
 import qualified Data.Text as Text
-import Mu.Formula (Evt (..), Formula (..), FormulaEvent (..), box, evtBottom, evtOr)
+import Mu.Formula (Evt (..), Formula (..), FormulaEvent (..), box, evtBottom, evtOr, lor)
 import qualified Mu.Parser as P
 import Test.Hspec
 import Prelude hiding (snd)
@@ -73,3 +73,18 @@ spec = do
   testCase "! mu a . b" $
     Not $
       Mu "a" "b"
+
+  testCase "! (mu x.[true] false || !x)" $
+    Not $
+      Mu "x" $
+        lor (box Up Bottom) (Not "x")
+
+  -- TODO fix prec
+  testCase "! mu x. [true] false || !x" $
+    unwrapRight $
+      P.parse "(! mu x. [true] false) || !x"
+
+unwrapRight :: (Show a) => Either a b -> b
+unwrapRight e = case e of
+  Right x -> x
+  Left err -> error (show err)

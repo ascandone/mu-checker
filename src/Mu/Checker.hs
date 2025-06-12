@@ -69,6 +69,7 @@ verify muEnv lts formula = do
   let verify_ = verify muEnv lts
   transitions <- State.lift $ getTransitions lts
   case formula of
+    Mu.Not (Mu.Not formula') -> verify muEnv lts formula'
     Mu.Bottom -> return False
     Mu.And l r -> do
       l' <- verify_ l
