@@ -66,7 +66,7 @@ main :: IO ()
 main = do
   args <- getArgs
   case args of
-    ["run", path] -> runFile path
+    ["check", path] -> runFile path
     ["dbg", path, procName] -> dbg path procName
     _ -> do
       putStrLn $ "Wrong number of args: " ++ show args
