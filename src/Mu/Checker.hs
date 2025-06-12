@@ -24,7 +24,7 @@ data VisitingState
 type MuEnv = Map Text (Set CCS.Process)
 
 data State = State
-  { approxCache :: Map CCS.Process VisitingState
+  { approxCache :: Map (CCS.Process, Text, Mu.Formula, Set CCS.Process) VisitingState
   , defsMap :: DefinitionsMap
   }
 
@@ -36,16 +36,13 @@ newtype FailingSpec
   = FalsifiedFormula Mu.Formula
 
 -- | All the new states reachable from this state that satisfy the formula (given this approx)
-improveApprox :: MuEnv -> CCS.Process -> Mu.Formula -> StateM (Set CCS.Process)
-improveApprox muEnv initialProc formula = do
-  oldState <- State.get
-  State.modify $ \s -> s{approxCache = Map.empty}
-  out <- visit initialProc
-  State.put oldState
-  return out
+improveApprox :: MuEnv -> CCS.Process -> Text -> Mu.Formula -> Set CCS.Process -> StateM (Set CCS.Process)
+improveApprox initialEnv initialProc binding formula currentApprox = visit initialProc
  where
+  updatedEnv = Map.insert binding currentApprox initialEnv
+
   visit proc_ = do
-    let key = proc_
+    let key = (proc_, binding, formula, currentApprox)
     cacheLookup <- State.gets (\s -> Map.lookup key s.approxCache)
     case cacheLookup of
       Just (Visited v) -> return v
@@ -57,7 +54,7 @@ improveApprox muEnv initialProc formula = do
         return v
 
   visit__raw proc_ = do
-    verified <- verify muEnv proc_ formula
+    verified <- verify updatedEnv proc_ formula
     transitions <- getTransitions proc_
     vs <- Control.Monad.forM transitions $ \(_evt, proc') ->
       visit proc'
@@ -87,8 +84,7 @@ verify muEnv proc_ formula = do
     Mu.Mu binding body -> do
       -- TODO refactor as "findFixPoint" for perf reasons
       fixPoint <- findGreatestFixpoint Set.empty $ \currentApprox ->
-        let muEnv' = Map.insert binding currentApprox muEnv
-         in improveApprox muEnv' proc_ body
+        improveApprox muEnv proc_ binding body currentApprox
       return $ proc_ `Set.member` fixPoint
     Mu.Diamond evt formula' ->
       case evt of
