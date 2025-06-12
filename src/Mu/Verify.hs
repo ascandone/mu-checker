@@ -17,73 +17,62 @@ import Data.Text (Text)
 import qualified Mu.Formula as Mu
 
 type DefinitionsMap = Map Text CCS.Definition
+type MuEnv = Map Text (Set CCS.Process)
 
 newtype FailingSpec
   = FalsifiedFormula Mu.Formula
 
 -- | All the new states reachable from this state that satisfy the formula (given this approx)
-navigateFixPoint :: Set CCS.Process -> LTS -> Text -> Mu.Formula -> Either LTS.Err [CCS.Process]
-navigateFixPoint approx lts binding formula = do
+improveApprox :: LTS -> Text -> Mu.Formula -> Set CCS.Process -> Either LTS.Err (Set CCS.Process)
+improveApprox lts binding formula approx = do
   -- TODO avoid inf looping
-  let bindingValue =
-        if lts._process `Set.member` approx
-          then Mu.always
-          else Mu.Bottom
 
-  let substFormula = Mu.mapBinding (const bindingValue) binding formula
-  verified <- verify lts substFormula
+  let muEnv = Map.insert binding approx Map.empty
+  verified <- verify muEnv lts formula
 
   transitions <- getTransitions lts -- TODO this could be cached in the LTS struct?
   vs <- Control.Monad.forM transitions $ \(_evt, lts') ->
-    navigateFixPoint approx lts' binding formula
-  return $
-    if verified && not (lts._process `Set.member` approx)
-      then lts._process : concat vs
-      else concat vs
+    improveApprox lts' binding formula approx
 
-findFixPoint :: Set CCS.Process -> LTS -> Text -> Mu.Formula -> Either LTS.Err (Set CCS.Process)
-findFixPoint approx lts binding formula = do
-  -- TODO is this lazy enough?
-  approxDiff <- navigateFixPoint approx lts binding formula
-  case approxDiff of
-    [] -> return approx
-    _ : _ ->
-      let newApprox = foldr Set.insert Set.empty approxDiff
-       in findFixPoint newApprox lts binding formula
+  let base = Set.fromList [lts._process | verified]
+  return $ foldr Set.union base vs
 
-verify :: LTS -> Mu.Formula -> Either LTS.Err Bool
-verify lts formula = do
+verify :: MuEnv -> LTS -> Mu.Formula -> Either LTS.Err Bool
+verify muEnv lts formula = do
+  let verify_ = verify muEnv lts
   transitions <- getTransitions lts
   case formula of
     Mu.Bottom -> Right False
     Mu.And l r -> do
-      l' <- verify lts l
-      r' <- verify lts r
+      l' <- verify_ l
+      r' <- verify_ r
       Right (l' && r')
-    Mu.Atom bin -> error $ "UNBOUNDE BINDING" ++ show bin
+    Mu.Atom bin -> return $ case Map.lookup bin muEnv of
+      Nothing -> False
+      Just s -> lts._process `Set.member` s
     Mu.Not formula' -> do
-      b <- verify lts formula'
+      b <- verify_ formula'
       Right $ not b
     Mu.Mu binding body -> do
       -- TODO refactor as "findFixPoint" for perf reasons
-      fixPoint <- findFixPoint Set.empty lts binding body
+      fixPoint <- findGreatestFixpoint (improveApprox lts binding body) Set.empty
       return $ lts._process `Set.member` fixPoint
     Mu.Diamond evt formula' ->
       case evt of
         Mu.EvtAnd l r -> do
-          l' <- verify lts (Mu.Diamond l formula')
-          r' <- verify lts (Mu.Diamond r formula')
+          l' <- verify_ (Mu.Diamond l formula')
+          r' <- verify_ (Mu.Diamond r formula')
           Right (l' && r')
         Mu.EvtNot evt' -> do
-          b <- verify lts (Mu.Diamond evt' formula')
+          b <- verify_ (Mu.Diamond evt' formula')
           Right $ not b
         Mu.Up -> do
           bools <- Control.Monad.forM transitions $ \(_, lts') ->
-            verify lts' formula'
+            verify muEnv lts' formula'
           Right $ or bools
         Mu.Evt evt' -> do
           bools <- Control.Monad.forM transitions $ \(evt'', lts') -> do
-            b <- verify lts' formula'
+            b <- verify muEnv lts' formula'
             Right $ evt' == evt'' && b
           Right $ or bools
 
@@ -115,6 +104,13 @@ verifyDefinitionSpecs :: DefinitionsMap -> CCS.Definition -> Either LTS.Err [Fai
 verifyDefinitionSpecs defsMap_ def = do
   vs <- Control.Monad.forM def.specs $ \(CCS.Ranged () formula) -> do
     let lts = State{_process = def.definition, _defsMap = defsMap_}
-    b <- Mu.Verify.verify lts formula
+    b <- Mu.Verify.verify Map.empty lts formula
     return ([FalsifiedFormula formula | not b])
   Right $ concat vs
+
+findGreatestFixpoint :: (Eq t) => (t -> Either err t) -> t -> Either err t
+findGreatestFixpoint f x = do
+  next <- f x
+  if next == x
+    then return next
+    else findGreatestFixpoint f next
