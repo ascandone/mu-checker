@@ -55,14 +55,17 @@ improveApprox initialEnv initialProc binding formula currentApprox = visit initi
 
   visit__raw proc_ = do
     verified <- verify updatedEnv proc_ formula
-    transitions <- getTransitions proc_
-    vs <- Control.Monad.forM transitions $ \(_evt, proc') ->
-      visit proc'
-    let base =
-          if verified
-            then Set.fromList [proc_]
-            else Set.empty
-    return $ foldr Set.union base vs
+    if verified && proc_ == initialProc
+      then return $ Set.fromList [proc_]
+      else do
+        transitions <- getTransitions proc_
+        vs <- Control.Monad.forM transitions $ \(_evt, proc') ->
+          visit proc'
+        let base =
+              if verified
+                then Set.fromList [proc_]
+                else Set.empty
+        return $ foldr Set.union base vs
 
 verify :: MuEnv -> CCS.Process -> Mu.Formula -> StateM Bool
 verify muEnv proc_ formula = do
