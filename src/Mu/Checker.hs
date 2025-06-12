@@ -36,24 +36,9 @@ type MuEnv = Map Text (Set CCS.Process)
 newtype FailingSpec
   = FalsifiedFormula Mu.Formula
 
-improveApprox :: LTS -> Text -> Mu.Formula -> Set CCS.Process -> CacheStateT (Set CCS.Process)
-improveApprox lts binding formula approx = do
-  let key = (lts._process, binding, formula, approx)
-  cacheLookup <- State.gets (Map.lookup key)
-  case cacheLookup of
-    Just (Visited v) -> return v
-    Just Visiting -> return Set.empty
-    Nothing -> do
-      State.modify $ Map.insert key Visiting
-      v <- improveApprox__raw lts binding formula approx
-      State.modify $ Map.insert key (Visited v)
-      return v
-
 -- | All the new states reachable from this state that satisfy the formula (given this approx)
-improveApprox__raw :: LTS -> Text -> Mu.Formula -> Set CCS.Process -> CacheStateT (Set CCS.Process)
-improveApprox__raw lts binding formula approx = do
-  -- TODO avoid inf looping
-
+improveApprox :: LTS -> Text -> Mu.Formula -> Set CCS.Process -> CacheStateT (Set CCS.Process)
+improveApprox = cache $ \lts binding formula approx -> do
   let muEnv = Map.insert binding approx Map.empty
   verified <- verify muEnv lts formula
 
@@ -151,3 +136,22 @@ findGreatestFixpoint f x = do
   if next == x
     then return next
     else findGreatestFixpoint f next
+
+cache ::
+  (LTS -> Text -> Mu.Formula -> Set CCS.Process -> CacheStateT (Set CCS.Process)) ->
+  LTS ->
+  Text ->
+  Mu.Formula ->
+  Set CCS.Process ->
+  CacheStateT (Set CCS.Process)
+cache f lts binding formula approx = do
+  let key = (lts._process, binding, formula, approx)
+  cacheLookup <- State.gets (Map.lookup key)
+  case cacheLookup of
+    Just (Visited v) -> return v
+    Just Visiting -> return Set.empty
+    Nothing -> do
+      State.modify $ Map.insert key Visiting
+      v <- f lts binding formula approx
+      State.modify $ Map.insert key (Visited v)
+      return v
