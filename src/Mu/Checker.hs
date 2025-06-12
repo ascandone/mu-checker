@@ -61,7 +61,10 @@ improveApprox__raw lts binding formula approx = do
   vs <- Control.Monad.forM transitions $ \(_evt, lts') ->
     improveApprox lts' binding formula approx
 
-  let base = Set.fromList [lts._process | verified]
+  let base =
+        if verified
+          then lts._process `Set.insert` approx
+          else approx
   return $ foldr Set.union base vs
 
 verify :: MuEnv -> LTS -> Mu.Formula -> CacheStateT Bool

@@ -139,7 +139,7 @@ spec = do
     it "detects loops" $ do
       let p =
             "P = a?.a?.P \
-            \@specs mu x . (<a!> true || <a?> x) \
+            \@specs mu x . <a!> true || <a?> x \
             \Main = P"
       verifyProgram p `shouldBe` False
 
