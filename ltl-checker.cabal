@@ -109,6 +109,8 @@ executable ltl-checker
     build-depends:
         ltl-checker,
         base ^>=4.17.2.1,
+        containers >= 0.6.7 && < 0.7,
+        mtl >= 2.3.1,
         text >= 2.0.2 && < 2.1,
 
     -- Directories containing source files.
