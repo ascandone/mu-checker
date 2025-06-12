@@ -98,9 +98,12 @@ verify muEnv lts formula = do
             verify muEnv lts' formula'
           return $ or bools
         Mu.Evt evt' -> do
-          bools <- Control.Monad.forM transitions $ \(evt'', lts') -> do
-            b <- verify muEnv lts' formula'
-            return $ evt' == evt'' && b
+          bools <- Control.Monad.forM transitions $ \(evt'', lts') -> case evt'' of
+            -- we verify again the <> formula (not formula')
+            Mu.Tau | evt' /= Mu.Tau -> verify muEnv lts' formula
+            _ -> do
+              b <- verify muEnv lts' formula'
+              return $ evt' == evt'' && b
           return $ or bools
 
 getTransitions :: LTS -> Either LTS.Err [(Mu.Evt, LTS)]

@@ -38,6 +38,12 @@ spec = do
           \Main = 0"
     verifyProgram p `shouldBe` False
 
+  it "can perfom an action even through tau" $ do
+    let p =
+          "@specs <a?> true\
+          \Main = x!.a?.0 | x?.0"
+    verifyProgram p `shouldBe` True
+
   it "<false> when no succ" $ do
     let p =
           "@specs <false> true\
