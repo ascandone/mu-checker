@@ -1,5 +1,5 @@
-# Revision history for ltl-checker
+# Revision history for mu-checker
 
 ## 0.1.0.0 -- YYYY-mm-dd
 
-* First version. Released on an unsuspecting world.
+- First version. Released on an unsuspecting world.
