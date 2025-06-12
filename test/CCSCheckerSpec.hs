@@ -143,6 +143,14 @@ spec = do
             \Main = P"
       verifyProgram p `shouldBe` False
 
+    it "travarses recursive (but finite) states" $ do
+      let p =
+            "BoolRegT = read_t!.BoolRegT + write_t?.BoolRegT + write_f?.BoolRegF \
+            \BoolRegF = read_f!.BoolRegF + write_t?.BoolRegT + write_f?.BoolRegF \
+            \@specs nu p . <true> true && [true] p \
+            \Main = BoolRegT"
+      verifyProgram p `shouldBe` True
+
 verifyProgram :: Text -> Bool
 verifyProgram src =
   src

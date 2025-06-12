@@ -58,7 +58,7 @@ imply if_ then_ = Not if_ `lor` then_
 
 nu :: Text -> Formula -> Formula
 nu binding formula =
-  Not (Mu binding (negateBinding binding formula))
+  Not (Mu binding $ Not (negateBinding binding formula))
 
 negateBinding :: Text -> Formula -> Formula
 negateBinding = mapBinding Not
