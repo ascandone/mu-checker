@@ -16,6 +16,7 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Text (Text)
 import qualified Mu.Formula as Mu
+import qualified Parser
 
 data VisitingState
   = Visited (Set CCS.Process)
@@ -137,7 +138,7 @@ verifyProgram definitions =
 
 verifyDefinitionSpecs :: CCS.Definition -> StateM [FailingSpec]
 verifyDefinitionSpecs def = do
-  vs <- Control.Monad.forM def.specs $ \(CCS.Ranged () formula) -> do
+  vs <- Control.Monad.forM def.specs $ \(Parser.Ranged _ formula) -> do
     b <- Mu.Checker.verify Map.empty def.definition formula
     return ([FalsifiedFormula formula | not b])
   return $ concat vs

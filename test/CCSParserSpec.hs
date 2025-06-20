@@ -10,6 +10,7 @@ import CCS.Program (Definition (..), EventChoice (..), Process (..))
 import qualified CCS.Program as CCS
 import qualified Data.Text as Text
 import qualified Mu.Formula as Mu
+import qualified Parser
 import Test.Hspec
 
 spec :: Spec
@@ -199,8 +200,8 @@ spec = do
         { name = "P"
         , params = []
         , specs =
-            [ CCS.Ranged
-                ()
+            [ Parser.Ranged
+                (Parser.Range (Parser.Position 1 1) (Parser.Position 2 1))
                 ( Mu.Diamond Mu.evtBottom "x"
                 )
             ]

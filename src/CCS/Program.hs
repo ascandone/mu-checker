@@ -3,18 +3,13 @@ module CCS.Program (
   Definition (..),
   Process (..),
   EventChoice (..),
-  Ranged (..),
 ) where
 
 import Data.Text (Text)
 import qualified Mu.Formula as Mu
+import Parser (Ranged)
 
 type Program = [Definition]
-
--- TODO range
-data Ranged x
-  = Ranged () x
-  deriving (Show, Eq, Ord)
 
 data Definition = Definition
   { specs :: [Ranged Mu.Formula]
