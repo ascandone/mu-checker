@@ -32,13 +32,18 @@ parseProc = Text.Megaparsec.parse (sc *> processP <* eof)
 ident :: Parser Text
 ident = lexeme lowercaseIdent
 
-choiceIdent :: Parser CCS.EventChoice
+eventType :: Parser CCS.ActionType
+eventType =
+  choice
+    [ CCS.Snd <$ symbol "!"
+    , CCS.Rcv <$ symbol "?"
+    ]
+
+choiceIdent :: Parser CCS.Action
 choiceIdent = lexeme $ do
   name <- lowercaseIdent
-  choice
-    [ CCS.Snd name <$ symbol "!"
-    , CCS.Rcv name <$ symbol "?"
-    ]
+  type_ <- eventType
+  return $ CCS.Action type_ name
 
 procIdent :: Parser Text
 procIdent = lexeme uppercaseIdent
@@ -70,7 +75,7 @@ procIdentArgs =
 processP :: Parser LTL.Process
 processP = Expr.makeExprParser procTerm operatorTable <?> "process"
 
-ccsChoice :: Parser (CCS.EventChoice, CCS.Process)
+ccsChoice :: Parser (CCS.Action, CCS.Process)
 ccsChoice =
   return (,)
     <*> choiceIdent

@@ -33,10 +33,11 @@ parensPretty :: Int -> CCS.Process -> Text
 parensPretty outerPrec proc_ | prec proc_ >= outerPrec = pretty proc_
 parensPretty _ proc_ = parens $ pretty proc_
 
-prettyEvt :: CCS.EventChoice -> Text
-prettyEvt choice = case choice of
-  CCS.Rcv evt -> evt <> "?"
-  CCS.Snd evt -> evt <> "!"
+prettyEvt :: CCS.Action -> Text
+prettyEvt (CCS.Action t label) =
+  label <> case t of
+    CCS.Rcv -> "?"
+    CCS.Snd -> "!"
 
 parens :: Text -> Text
 parens x = "(" <> x <> ")"

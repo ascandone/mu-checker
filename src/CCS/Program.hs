@@ -2,7 +2,9 @@ module CCS.Program (
   Program,
   Definition (..),
   Process (..),
-  EventChoice (..),
+  -- EventChoice (..),
+  ActionType (..),
+  Action (..),
 ) where
 
 import Data.Text (Text)
@@ -19,14 +21,18 @@ data Definition = Definition
   }
   deriving (Show, Eq, Ord)
 
-data EventChoice
-  = Snd Text
-  | Rcv Text
+data ActionType
+  = Snd
+  | Rcv
+  deriving (Show, Eq, Ord)
+
+data Action
+  = Action ActionType Text
   deriving (Show, Eq, Ord)
 
 data Process
   = Ident Text [Text]
-  | Choice [(EventChoice, Process)]
+  | Choice [(Action, Process)]
   | Par Process Process
   | Restriction Text Process
   deriving (Show, Eq, Ord)
