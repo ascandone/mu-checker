@@ -44,6 +44,11 @@ spec = do
                  , (Nothing, parse "X | Y")
                  ]
 
+  it "parametric transition" $ do
+    getTransitions [] "f(a, b)?.X"
+      `shouldBe` [ (Just $ CCS.Action CCS.Rcv "f" ["a", "b"], parse "X")
+                 ]
+
 parse :: Text -> CCS.Process
 parse = unwrapRight . P.parseProc "proc"
 
