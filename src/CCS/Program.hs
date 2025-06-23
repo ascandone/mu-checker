@@ -2,7 +2,6 @@ module CCS.Program (
   Program,
   Definition (..),
   Process (..),
-  -- EventChoice (..),
   ActionType (..),
   Action (..),
 ) where
