@@ -11,7 +11,6 @@ module CCS.Parser (
 ) where
 
 import qualified CCS.Program as CCS
-import qualified CCS.Program as LTL
 import Control.Applicative.Combinators (choice)
 import qualified Control.Monad.Combinators.Expr as Expr
 import Data.Text (Text)
@@ -63,7 +62,7 @@ definitionP =
     <* symbol "="
     <*> processP
 
-processP :: Parser LTL.Process
+processP :: Parser CCS.Process
 processP = Expr.makeExprParser procTerm operatorTable <?> "process"
 
 ccsChoice :: Parser (CCS.Action, CCS.Process)
@@ -91,10 +90,18 @@ procTerm = do
       ]
   return $ foldr CCS.Restriction term mLabels
 
+multiChoiceSugar :: Parser CCS.Process
+multiChoiceSugar = do
+  actions <- parens (choiceIdent `sepBy1` symbol "+")
+  _ <- symbol "."
+  proc_ <- procTerm
+  return $ CCS.Choice [(action, proc_) | action <- actions]
+
 procTermUnrestricted :: Parser CCS.Process
 procTermUnrestricted =
   choice
-    [ parens processP
+    [ Text.Megaparsec.try multiChoiceSugar
+    , parens processP
     , CCS.Choice [] <$ symbol "0"
     , CCS.Choice <$> ccsChoice `sepBy1` symbol "+"
     , CCS.Ident <$> procIdent <*> args ident

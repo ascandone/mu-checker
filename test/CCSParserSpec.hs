@@ -38,6 +38,12 @@ spec = do
       [ (CCS.Action Rcv "f" ["a", "b"], Choice [])
       ]
 
+  testParseProcess "(a? + b!).P" $
+    Choice
+      [ (CCS.Action Rcv "a" [], Ident "P" [])
+      , (CCS.Action Snd "b" [], Ident "P" [])
+      ]
+
   testParseProgram "Main = 0" $
     [ Definition
         { name = "Main"
