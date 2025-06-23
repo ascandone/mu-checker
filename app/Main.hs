@@ -12,6 +12,7 @@ import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO
+import qualified LS
 import Mu.Checker (FailingSpec (FalsifiedFormula))
 import qualified Mu.Checker
 import System.Environment (getArgs)
@@ -68,6 +69,7 @@ main = do
   case args of
     ["check", path] -> runFile path
     ["dbg", path, procName] -> dbg path procName
+    ["lsp"] -> LS.start
     _ -> do
       putStrLn $ "Wrong number of args: " ++ show args
       exitFailure

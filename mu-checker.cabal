@@ -96,7 +96,8 @@ executable mu-checker
     main-is:          Main.hs
 
     -- Modules included in this executable, other than Main.
-    -- other-modules:
+    other-modules:
+        LS
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
@@ -108,6 +109,8 @@ executable mu-checker
         containers >= 0.6.7,
         mtl >= 2.3.1,
         text >= 2.0.2,
+        lsp ^>= 2.7.0.1,
+        lsp-types ^>= 2.3.0.1,
 
     -- Directories containing source files.
     hs-source-dirs:   app
