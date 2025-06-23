@@ -50,8 +50,8 @@ spec = do
     it "needs parens for restriction of a single choice" $ do
       shouldBePrinted "(a!.0)\\a"
 
-    -- it "needs parens if restriction is within choice" $ do
-    --   shouldBePrinted "a!.(0\\a)"
+    it "needs parens if restriction is within choice" $ do
+      shouldBePrinted "f(a, b)!.0"
 
     it "needs parens for restriction of a multiple choice" $ do
       shouldBePrinted "(a!.0 + b!.0)\\a"
