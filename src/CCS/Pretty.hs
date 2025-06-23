@@ -34,10 +34,13 @@ parensPretty outerPrec proc_ | prec proc_ >= outerPrec = pretty proc_
 parensPretty _ proc_ = parens $ pretty proc_
 
 prettyEvt :: CCS.Action -> Text
-prettyEvt (CCS.Action t label) =
-  label <> case t of
-    CCS.Rcv -> "?"
-    CCS.Snd -> "!"
+prettyEvt (CCS.Action t label args) =
+  let args_ = case args of
+        [] -> ""
+        _ -> "(" <> T.intercalate ", " args <> ")"
+   in label <> args_ <> case t of
+        CCS.Rcv -> "?"
+        CCS.Snd -> "!"
 
 parens :: Text -> Text
 parens x = "(" <> x <> ")"

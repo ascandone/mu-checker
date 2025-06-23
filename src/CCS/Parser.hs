@@ -14,13 +14,12 @@ import qualified CCS.Program as CCS
 import qualified CCS.Program as LTL
 import Control.Applicative.Combinators (choice)
 import qualified Control.Monad.Combinators.Expr as Expr
-import qualified Data.Maybe
 import Data.Text (Text)
 import Data.Void
 import qualified Mu.Formula as Mu
 import qualified Mu.Parser
-import Parser (Parser, Ranged, lexeme, lowercaseIdent, parens, ranged, sc, symbol, uppercaseIdent)
-import Text.Megaparsec (MonadParsec (eof), between, many, optional, sepBy, sepBy1, (<?>))
+import Parser (Parser, Ranged, args, lexeme, lowercaseIdent, parens, ranged, sc, symbol, uppercaseIdent)
+import Text.Megaparsec (MonadParsec (eof), between, many, sepBy, sepBy1, (<?>))
 import qualified Text.Megaparsec
 
 parse :: String -> Text -> Either (Text.Megaparsec.ParseErrorBundle Text Void) CCS.Program
@@ -42,8 +41,9 @@ eventType =
 choiceIdent :: Parser CCS.Action
 choiceIdent = lexeme $ do
   name <- lowercaseIdent
+  args_ <- args ident
   type_ <- eventType
-  return $ CCS.Action type_ name
+  return $ CCS.Action type_ name args_
 
 procIdent :: Parser Text
 procIdent = lexeme uppercaseIdent
@@ -59,18 +59,9 @@ definitionP =
   return CCS.Definition
     <*> many specP
     <*> procIdent
-    <*> procIdentArgs
+    <*> args ident
     <* symbol "="
     <*> processP
-
-listOptional :: Parser [a] -> Parser [a]
-listOptional p =
-  Data.Maybe.fromMaybe [] <$> optional p
-
-procIdentArgs :: Parser [Text]
-procIdentArgs =
-  listOptional $
-    parens (ident `sepBy` symbol ",")
 
 processP :: Parser LTL.Process
 processP = Expr.makeExprParser procTerm operatorTable <?> "process"
@@ -106,7 +97,7 @@ procTermUnrestricted =
     [ parens processP
     , CCS.Choice [] <$ symbol "0"
     , CCS.Choice <$> ccsChoice `sepBy1` symbol "+"
-    , CCS.Ident <$> procIdent <*> procIdentArgs
+    , CCS.Ident <$> procIdent <*> args ident
     ]
     <?> "process term"
 

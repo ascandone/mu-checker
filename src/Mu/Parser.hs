@@ -7,7 +7,7 @@ import qualified Control.Monad.Combinators.Expr as Expr
 import Data.Text (Text)
 import Data.Void
 import qualified Mu.Formula as Mu
-import Parser (Parser, lexeme, lowercaseIdent, nestablePrefixes, parens, sc, symbol)
+import Parser (Parser, args, lexeme, lowercaseIdent, nestablePrefixes, parens, sc, symbol)
 import Text.Megaparsec (
   MonadParsec (eof),
   between,
@@ -24,9 +24,10 @@ parse = Text.Megaparsec.parse (sc *> formula <* eof) "ltl"
 evtIdent :: Parser Mu.FormulaEvent
 evtIdent = lexeme $ do
   text <- lowercaseIdent
+  args_ <- args lowercaseIdent
   choice
-    [ Mu.Evt (Mu.Snd text) <$ symbol "!"
-    , Mu.Evt (Mu.Rcv text) <$ symbol "?"
+    [ Mu.Evt (Mu.Snd text args_) <$ symbol "!"
+    , Mu.Evt (Mu.Rcv text args_) <$ symbol "?"
     ]
 
 formula :: Parser Mu.Formula

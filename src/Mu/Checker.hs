@@ -121,8 +121,8 @@ mapChoice :: Maybe CCS.Action -> Mu.Evt
 mapChoice evt =
   case evt of
     Nothing -> Mu.Tau
-    Just (CCS.Action CCS.Rcv e) -> Mu.Rcv e
-    Just (CCS.Action CCS.Snd e) -> Mu.Snd e
+    Just (CCS.Action CCS.Rcv e args) -> Mu.Rcv e args
+    Just (CCS.Action CCS.Snd e args) -> Mu.Snd e args
 
 verifyProgram :: CCS.Program -> [(CCS.Definition, Either LTS.Err [FailingSpec])]
 verifyProgram definitions =

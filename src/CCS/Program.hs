@@ -27,7 +27,7 @@ data ActionType
   deriving (Show, Eq, Ord)
 
 data Action
-  = Action ActionType Text
+  = Action ActionType Text [Text]
   deriving (Show, Eq, Ord)
 
 data Process

@@ -54,15 +54,15 @@ getHandshakes leftTransitions rightTransitions =
   ]
 
 handshake :: CCS.Action -> CCS.Action -> Bool
-handshake (CCS.Action t1 label1) (CCS.Action t2 label2) =
-  label1 == label2 && case (t1, t2) of
+handshake (CCS.Action t1 label1 args1) (CCS.Action t2 label2 args2) =
+  label1 == label2 && args1 == args2 && case (t1, t2) of
     (CCS.Rcv, CCS.Snd) -> True
     (CCS.Snd, CCS.Rcv) -> True
     _ -> False
 
 unrestricted :: Text -> (Maybe CCS.Action, x) -> Bool
 unrestricted l (evt, _) = case evt of
-  Just (CCS.Action _ e) -> e /= l
+  Just (CCS.Action _ e _) -> e /= l
   Nothing -> True
 
 applyParams :: [Text] -> [Text] -> CCS.Process -> Either Err CCS.Process
@@ -89,4 +89,4 @@ applyParam param arg proc_ = case proc_ of
  where
   substitute x | x == param = arg
   substitute x = x
-  substituteEvt (CCS.Action t e) = CCS.Action t (substitute e)
+  substituteEvt (CCS.Action t e args) = CCS.Action t (substitute e) (map substitute args)

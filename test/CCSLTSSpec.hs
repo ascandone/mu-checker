@@ -16,31 +16,31 @@ spec = do
 
   it "unary choice" $ do
     getTransitions [] "a?.0"
-      `shouldBe` [ (Just $ CCS.Action CCS.Rcv "a", CCS.Choice [])
+      `shouldBe` [ (Just $ CCS.Action CCS.Rcv "a" [], CCS.Choice [])
                  ]
 
   it "binary choice" $ do
     getTransitions [] "a?.A + b!.B"
-      `shouldBe` [ (Just $ CCS.Action CCS.Rcv "a", CCS.Ident "A" [])
-                 , (Just $ CCS.Action CCS.Snd "b", CCS.Ident "B" [])
+      `shouldBe` [ (Just $ CCS.Action CCS.Rcv "a" [], CCS.Ident "A" [])
+                 , (Just $ CCS.Action CCS.Snd "b" [], CCS.Ident "B" [])
                  ]
 
   it "wrapped in par" $ do
     getTransitions [] "0 | a?.A + b!.B | 0"
-      `shouldBe` [ (Just $ CCS.Action CCS.Rcv "a", parse "0 | A | 0")
-                 , (Just $ CCS.Action CCS.Snd "b", parse "0 | B | 0")
+      `shouldBe` [ (Just $ CCS.Action CCS.Rcv "a" [], parse "0 | A | 0")
+                 , (Just $ CCS.Action CCS.Snd "b" [], parse "0 | B | 0")
                  ]
 
   it "wrapped in par both transitions" $ do
     getTransitions [] "a?.A | b!.B"
-      `shouldBe` [ (Just $ CCS.Action CCS.Rcv "a", parse "A | b!.B")
-                 , (Just $ CCS.Action CCS.Snd "b", parse "a?.A | B")
+      `shouldBe` [ (Just $ CCS.Action CCS.Rcv "a" [], parse "A | b!.B")
+                 , (Just $ CCS.Action CCS.Snd "b" [], parse "a?.A | B")
                  ]
 
   it "handshake" $ do
     getTransitions [] "a?.X | a!.Y"
-      `shouldBe` [ (Just $ CCS.Action CCS.Rcv "a", parse "X | a!.Y")
-                 , (Just $ CCS.Action CCS.Snd "a", parse "a?.X | Y")
+      `shouldBe` [ (Just $ CCS.Action CCS.Rcv "a" [], parse "X | a!.Y")
+                 , (Just $ CCS.Action CCS.Snd "a" [], parse "a?.X | Y")
                  , (Nothing, parse "X | Y")
                  ]
 

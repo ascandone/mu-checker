@@ -13,10 +13,10 @@ testCase src expected =
   it src (P.parse (Text.pack src) `shouldBe` Right expected)
 
 rcv :: Text.Text -> FormulaEvent
-rcv = Evt . Rcv
+rcv t = Evt (Rcv t [])
 
 snd :: Text.Text -> FormulaEvent
-snd = Evt . Snd
+snd t = Evt (Snd t [])
 
 tau :: FormulaEvent
 tau = Evt Tau
@@ -48,6 +48,9 @@ spec = do
 
   testCase "<a?> x" $
     Diamond (rcv "a") "x"
+
+  testCase "<f(a, b)?> x" $
+    Diamond (Evt $ Rcv "f" ["a", "b"]) "x"
 
   testCase "<a!> x" $
     Diamond (snd "a") "x"
