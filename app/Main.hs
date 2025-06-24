@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main (main) where
 
@@ -33,11 +34,18 @@ runFile filePath = do
         Control.Monad.forM_ failingsSpecs $ \(FalsifiedFormula formula) ->
           print (def.name, formula)
 
-stringifyEvt :: Maybe CCS.Program.EventChoice -> String
+stringifyEvt :: Maybe CCS.Program.Action -> String
 stringifyEvt evt = case evt of
   Nothing -> "tau"
-  Just (CCS.Program.Snd a) -> Text.unpack a ++ "!"
-  Just (CCS.Program.Rcv a) -> Text.unpack a ++ "?"
+  Just (CCS.Program.Action t a args) ->
+    Text.unpack $
+      a <> mkArgs args <> case t of
+        CCS.Program.Rcv -> "!"
+        CCS.Program.Snd -> "?"
+ where
+  mkArgs args = case args of
+    [] -> ""
+    _ -> "(" <> Text.intercalate "," args <> ")"
 
 dbgLoop :: Map Text CCS.Program.Definition -> CCS.Program.Process -> IO ()
 dbgLoop defs init_ = do

@@ -86,6 +86,25 @@ spec = do
           \Main = x!.0"
     verifyProgram p `shouldBe` False
 
+  it "handles parametric args, when args match" $ do
+    let p =
+          "@specs <f(a, b)!> true\
+          \Main = f(a, b)!.0"
+    verifyProgram p `shouldBe` True
+
+  it "handles parametric args, when args do not match" $ do
+    let p =
+          "@specs <f(a, b)!> true\
+          \Main = f(a, z)!.0"
+    verifyProgram p `shouldBe` False
+
+  it "handles substitution of parametric args" $ do
+    let p =
+          "P(x) = f(x)!.0\
+          \@specs <f(a)!> true\
+          \Main = P(a)"
+    verifyProgram p `shouldBe` True
+
   it "nested diamonds when leads to true" $ do
     let p =
           "@specs <a!> <b!> true\

@@ -23,7 +23,7 @@ data Err
 
 -- LTS stuff
 
-getTransitions :: Map Text CCS.Definition -> CCS.Process -> Either Err [(Maybe CCS.EventChoice, CCS.Process)]
+getTransitions :: Map Text CCS.Definition -> CCS.Process -> Either Err [(Maybe CCS.Action, CCS.Process)]
 getTransitions defs proc_ =
   case proc_ of
     CCS.Ident name args ->
@@ -45,7 +45,7 @@ getTransitions defs proc_ =
       transitions <- getTransitions defs proc'
       Right [(evt, CCS.Restriction label nextProc) | tr@(evt, nextProc) <- transitions, unrestricted label tr]
 
-getHandshakes :: [(Maybe CCS.EventChoice, CCS.Process)] -> [(Maybe CCS.EventChoice, CCS.Process)] -> [(Maybe a, CCS.Process)]
+getHandshakes :: [(Maybe CCS.Action, CCS.Process)] -> [(Maybe CCS.Action, CCS.Process)] -> [(Maybe a, CCS.Process)]
 getHandshakes leftTransitions rightTransitions =
   [ (Nothing, CCS.Par lProc rProc)
   | (Just evtL, lProc) <- leftTransitions
@@ -53,16 +53,16 @@ getHandshakes leftTransitions rightTransitions =
   , handshake evtL evtR
   ]
 
-handshake :: CCS.EventChoice -> CCS.EventChoice -> Bool
-handshake e1 e2 = case (e1, e2) of
-  (CCS.Rcv l1, CCS.Snd l2) | l1 == l2 -> True
-  (CCS.Snd l1, CCS.Rcv l2) | l1 == l2 -> True
-  _ -> False
+handshake :: CCS.Action -> CCS.Action -> Bool
+handshake (CCS.Action t1 label1 args1) (CCS.Action t2 label2 args2) =
+  label1 == label2 && args1 == args2 && case (t1, t2) of
+    (CCS.Rcv, CCS.Snd) -> True
+    (CCS.Snd, CCS.Rcv) -> True
+    _ -> False
 
-unrestricted :: Text -> (Maybe CCS.EventChoice, x) -> Bool
+unrestricted :: Text -> (Maybe CCS.Action, x) -> Bool
 unrestricted l (evt, _) = case evt of
-  Just (CCS.Rcv e) -> e /= l
-  Just (CCS.Snd e) -> e /= l
+  Just (CCS.Action _ e _) -> e /= l
   Nothing -> True
 
 applyParams :: [Text] -> [Text] -> CCS.Process -> Either Err CCS.Process
@@ -89,5 +89,4 @@ applyParam param arg proc_ = case proc_ of
  where
   substitute x | x == param = arg
   substitute x = x
-  substituteEvt (CCS.Snd e) = CCS.Snd (substitute e)
-  substituteEvt (CCS.Rcv e) = CCS.Rcv (substitute e)
+  substituteEvt (CCS.Action t e args) = CCS.Action t (substitute e) (map substitute args)

@@ -11,16 +11,14 @@ module CCS.Parser (
 ) where
 
 import qualified CCS.Program as CCS
-import qualified CCS.Program as LTL
 import Control.Applicative.Combinators (choice)
 import qualified Control.Monad.Combinators.Expr as Expr
-import qualified Data.Maybe
 import Data.Text (Text)
 import Data.Void
 import qualified Mu.Formula as Mu
 import qualified Mu.Parser
-import Parser (Parser, Ranged, lexeme, lowercaseIdent, parens, ranged, sc, symbol, uppercaseIdent)
-import Text.Megaparsec (MonadParsec (eof), between, many, optional, sepBy, sepBy1, (<?>))
+import Parser (Parser, Ranged, args, lexeme, lowercaseIdent, parens, ranged, sc, symbol, uppercaseIdent)
+import Text.Megaparsec (MonadParsec (eof), between, many, sepBy, sepBy1, (<?>))
 import qualified Text.Megaparsec
 
 parse :: String -> Text -> Either (Text.Megaparsec.ParseErrorBundle Text Void) CCS.Program
@@ -32,13 +30,19 @@ parseProc = Text.Megaparsec.parse (sc *> processP <* eof)
 ident :: Parser Text
 ident = lexeme lowercaseIdent
 
-choiceIdent :: Parser CCS.EventChoice
+eventType :: Parser CCS.ActionType
+eventType =
+  choice
+    [ CCS.Snd <$ symbol "!"
+    , CCS.Rcv <$ symbol "?"
+    ]
+
+choiceIdent :: Parser CCS.Action
 choiceIdent = lexeme $ do
   name <- lowercaseIdent
-  choice
-    [ CCS.Snd name <$ symbol "!"
-    , CCS.Rcv name <$ symbol "?"
-    ]
+  args_ <- args ident
+  type_ <- eventType
+  return $ CCS.Action type_ name args_
 
 procIdent :: Parser Text
 procIdent = lexeme uppercaseIdent
@@ -54,23 +58,14 @@ definitionP =
   return CCS.Definition
     <*> many specP
     <*> procIdent
-    <*> procIdentArgs
+    <*> args ident
     <* symbol "="
     <*> processP
 
-listOptional :: Parser [a] -> Parser [a]
-listOptional p =
-  Data.Maybe.fromMaybe [] <$> optional p
-
-procIdentArgs :: Parser [Text]
-procIdentArgs =
-  listOptional $
-    parens (ident `sepBy` symbol ",")
-
-processP :: Parser LTL.Process
+processP :: Parser CCS.Process
 processP = Expr.makeExprParser procTerm operatorTable <?> "process"
 
-ccsChoice :: Parser (CCS.EventChoice, CCS.Process)
+ccsChoice :: Parser (CCS.Action, CCS.Process)
 ccsChoice =
   return (,)
     <*> choiceIdent
@@ -95,13 +90,21 @@ procTerm = do
       ]
   return $ foldr CCS.Restriction term mLabels
 
+multiChoiceSugar :: Parser CCS.Process
+multiChoiceSugar = do
+  actions <- parens (choiceIdent `sepBy1` symbol "+")
+  _ <- symbol "."
+  proc_ <- procTerm
+  return $ CCS.Choice [(action, proc_) | action <- actions]
+
 procTermUnrestricted :: Parser CCS.Process
 procTermUnrestricted =
   choice
-    [ parens processP
+    [ Text.Megaparsec.try multiChoiceSugar
+    , parens processP
     , CCS.Choice [] <$ symbol "0"
     , CCS.Choice <$> ccsChoice `sepBy1` symbol "+"
-    , CCS.Ident <$> procIdent <*> procIdentArgs
+    , CCS.Ident <$> procIdent <*> args ident
     ]
     <?> "process term"
 

@@ -6,7 +6,7 @@ module CCSParserSpec (spec) where
 
 import CCS.Parser (errorBundlePretty)
 import qualified CCS.Parser as P
-import CCS.Program (Definition (..), EventChoice (..), Process (..))
+import CCS.Program (ActionType (..), Definition (..), Process (..))
 import qualified CCS.Program as CCS
 import qualified Data.Text as Text
 import qualified Mu.Formula as Mu
@@ -32,6 +32,17 @@ spec = do
   testParseProcess "(X)\n\\{\na, b}" $
     Restriction "a" $
       Restriction "b" (Ident "X" [])
+
+  testParseProcess "f(a, b)?.0" $
+    Choice
+      [ (CCS.Action Rcv "f" ["a", "b"], Choice [])
+      ]
+
+  testParseProcess "(a? + b!).P" $
+    Choice
+      [ (CCS.Action Rcv "a" [], Ident "P" [])
+      , (CCS.Action Snd "b" [], Ident "P" [])
+      ]
 
   testParseProgram "Main = 0" $
     [ Definition
@@ -97,7 +108,7 @@ spec = do
         , specs = []
         , definition =
             Choice
-              [ (Rcv "a", Choice [])
+              [ (CCS.Action Rcv "a" [], Choice [])
               ]
         }
     ]
@@ -109,11 +120,11 @@ spec = do
         , definition =
             Par
               ( Choice
-                  [ (Rcv "a", Choice [])
+                  [ (CCS.Action Rcv "a" [], Choice [])
                   ]
               )
               ( Choice
-                  [ (Snd "b", Choice [])
+                  [ (CCS.Action Snd "b" [], Choice [])
                   ]
               )
         }
@@ -125,8 +136,8 @@ spec = do
         , specs = []
         , definition =
             Choice
-              [ (Rcv "a", Choice [])
-              , (Snd "b", Choice [])
+              [ (CCS.Action Rcv "a" [], Choice [])
+              , (CCS.Action Snd "b" [], Choice [])
               ]
         }
     ]
@@ -138,8 +149,8 @@ spec = do
         , definition =
             Par
               ( Choice
-                  [ (Rcv "a", Choice [])
-                  , (Snd "b", Choice [])
+                  [ (CCS.Action Rcv "a" [], Choice [])
+                  , (CCS.Action Snd "b" [], Choice [])
                   ]
               )
               ( Ident "X" []
@@ -153,9 +164,9 @@ spec = do
         , specs = []
         , definition =
             Choice
-              [ (Rcv "a", Choice [])
+              [ (CCS.Action Rcv "a" [], Choice [])
               ,
-                ( Snd "b"
+                ( CCS.Action Snd "b" []
                 , Par
                     (Ident "X" [])
                     (Ident "Y" [])
@@ -171,9 +182,9 @@ spec = do
         , definition =
             Par
               ( Choice
-                  [ (Rcv "a", Choice [])
+                  [ (CCS.Action Rcv "a" [], Choice [])
                   ,
-                    ( Snd "b"
+                    ( CCS.Action Snd "b" []
                     , Ident "X" []
                     )
                   ]

@@ -14,14 +14,16 @@ module Parser (
   Position (..),
   Ranged (..),
   Range (..),
+  args,
 ) where
 
 import Control.Applicative.Combinators (choice)
 import qualified Control.Monad.Combinators.Expr as Expr
+import qualified Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Void
-import Text.Megaparsec (Parsec, SourcePos (..), between, empty, getSourcePos, many, some, unPos, (<|>))
+import Text.Megaparsec (Parsec, SourcePos (..), between, empty, getSourcePos, many, optional, sepBy, some, unPos, (<|>))
 import Text.Megaparsec.Char (alphaNumChar, char, lowerChar, space1, upperChar)
 import qualified Text.Megaparsec.Char.Lexer as L
 
@@ -94,3 +96,12 @@ ranged p = do
   x <- p
   end_ <- getCurrentPosition
   return $ Ranged (Range start_ end_) x
+
+listOptional :: Parser [a] -> Parser [a]
+listOptional p =
+  Data.Maybe.fromMaybe [] <$> optional p
+
+args :: Parser a -> Parser [a]
+args item =
+  listOptional $
+    parens (item `sepBy` symbol ",")

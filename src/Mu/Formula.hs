@@ -17,8 +17,8 @@ import Data.Text (Text)
 import qualified Data.Text as Test
 
 data Evt
-  = Rcv Text
-  | Snd Text
+  = Rcv Text [Text]
+  | Snd Text [Text]
   | Tau
   deriving (Show, Eq, Ord)
 
