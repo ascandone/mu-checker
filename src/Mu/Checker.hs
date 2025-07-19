@@ -46,13 +46,12 @@ isInLeastFixpoint :: DefinitionsMap -> Text -> MuEnv -> CCS.Process -> Mu.Formul
 isInLeastFixpoint defsMap binding env proc_ formula = loop Set.empty
  where
   loop set = do
-    let env' = Map.insert binding set env
-    procs <- improveApprox defsMap env' proc_ formula
+    procs <- improveApprox defsMap (Map.insert binding set env) proc_ formula
     let newSet = Set.fromList procs
     case () of
-      () | proc_ `elem` procs -> return True
-      () | newSet `Set.isSubsetOf` set -> return False
-      () -> loop (Set.union newSet set)
+      _ | proc_ `elem` procs -> return True
+      _ | newSet `Set.isSubsetOf` set -> return False
+      _ -> loop (Set.union newSet set)
 
 verify :: DefinitionsMap -> MuEnv -> CCS.Process -> Mu.Formula -> Either LTS.Err Bool
 verify defsMap muEnv proc_ formula = do
