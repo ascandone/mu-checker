@@ -39,7 +39,7 @@ improveApprox :: DefinitionsMap -> MuEnv -> CCS.Process -> Mu.Formula -> Either 
 improveApprox defsMap muEnv proc_ formula = do
   reachableProcs <- liftEither $ reachableFrom defsMap proc_
   Control.Monad.filterM
-    (\reachable -> verify defsMap muEnv reachable formula)
+    (\reachable -> (defsMap, muEnv, reachable) |= formula)
     reachableProcs
 
 isInLeastFixpoint :: DefinitionsMap -> Text -> MuEnv -> CCS.Process -> Mu.Formula -> Either LTS.Err Bool
@@ -53,43 +53,42 @@ isInLeastFixpoint defsMap binding env proc_ formula = loop Set.empty
       _ | newSet `Set.isSubsetOf` set -> return False
       _ -> loop (Set.union newSet set)
 
-verify :: DefinitionsMap -> MuEnv -> CCS.Process -> Mu.Formula -> Either LTS.Err Bool
-verify defsMap muEnv proc_ formula = do
-  let verify_ = verify defsMap muEnv proc_
+(|=) :: (DefinitionsMap, MuEnv, CCS.Process) -> Mu.Formula -> Either LTS.Err Bool
+(|=) pre@(defsMap, muEnv, proc_) formula = do
   transitions <- LTS.getTransitions defsMap proc_
   case formula of
-    Mu.Not (Mu.Not formula') -> verify defsMap muEnv proc_ formula'
+    Mu.Not (Mu.Not formula') -> pre |= formula'
     Mu.Bottom -> return False
     Mu.And l r -> do
-      l' <- verify_ l
-      r' <- verify_ r
+      l' <- pre |= l
+      r' <- pre |= r
       return (l' && r')
-    Mu.Atom bin -> return $ case Map.lookup bin muEnv of
+    Mu.Atom bin -> Right $ case Map.lookup bin muEnv of
       Nothing -> False
       Just s -> proc_ `Set.member` s
     Mu.Not formula' -> do
-      b <- verify_ formula'
-      return $ not b
+      b <- pre |= formula'
+      Right $ not b
     Mu.Mu binding body -> isInLeastFixpoint defsMap binding muEnv proc_ body
     Mu.Diamond evt formula' ->
       case evt of
         Mu.EvtAnd l r -> do
-          l' <- verify_ (Mu.Diamond l formula')
-          r' <- verify_ (Mu.Diamond r formula')
+          l' <- pre |= Mu.Diamond l formula'
+          r' <- pre |= Mu.Diamond r formula'
           return (l' && r')
         Mu.EvtNot evt' -> do
-          b <- verify_ (Mu.Diamond evt' formula')
+          b <- pre |= Mu.Diamond evt' formula'
           return $ not b
         Mu.Up -> do
-          bools <- Control.Monad.forM transitions $ \(_, lts') ->
-            verify defsMap muEnv lts' formula'
+          bools <- Control.Monad.forM transitions $ \(_, proc') ->
+            (defsMap, muEnv, proc') |= formula'
           return $ or bools
         Mu.Evt evt' -> do
-          bools <- Control.Monad.forM transitions $ \(evt'', lts') -> case mapChoice evt'' of
+          bools <- Control.Monad.forM transitions $ \(evt'', proc') -> case mapChoice evt'' of
             -- we verify again the <> formula (not formula')
-            Mu.Tau | evt' /= Mu.Tau -> verify defsMap muEnv lts' formula
+            Mu.Tau | evt' /= Mu.Tau -> (defsMap, muEnv, proc') |= formula
             mappedEvt -> do
-              b <- verify defsMap muEnv lts' formula'
+              b <- (defsMap, muEnv, proc') |= formula'
               return $ evt' == mappedEvt && b
           return $ or bools
 
@@ -112,6 +111,6 @@ verifyProgram definitions =
 verifyDefinitionSpecs :: DefinitionsMap -> CCS.Definition -> Either LTS.Err [FailingSpec]
 verifyDefinitionSpecs defsMap def = do
   vs <- Control.Monad.forM def.specs $ \(Parser.Ranged _ formula) -> do
-    b <- Mu.Checker.verify defsMap Map.empty def.definition formula
+    b <- (defsMap, Map.empty, def.definition) |= formula
     return ([FalsifiedFormula formula | not b])
   return $ concat vs
