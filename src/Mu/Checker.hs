@@ -2,6 +2,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Use newtype instead of data" #-}
+{-# HLINT ignore "Use camelCase" #-}
 
 module Mu.Checker (
   verifyProgram,
@@ -21,10 +22,13 @@ import Data.Text (Text)
 import qualified Mu.Formula as Mu
 import qualified Parser
 
+type Cache = Map (CCS.Process, Mu.Formula) Bool
+
 type MuEnv = Map Text (Set CCS.Process)
 
 data State = State
   { defsMap :: DefinitionsMap
+  , cache :: Cache
   }
 
 type StateM = State.StateT State (Either LTS.Err)
@@ -53,20 +57,37 @@ improveApprox muEnv proc_ formula = do
     (\reachable -> verify muEnv reachable formula)
     reachableProcs
 
+withEmptyCache :: StateM a -> StateM a
+withEmptyCache f = do
+  oldCache <- State.gets cache
+  State.modify $ \st -> st{cache = Map.empty}
+  b <- f
+  State.modify $ \st -> st{cache = oldCache}
+  return b
+
 isInLeastFixpoint :: Text -> MuEnv -> CCS.Process -> Mu.Formula -> StateM Bool
 isInLeastFixpoint binding env proc_ formula = loop Set.empty
  where
-  loop set = do
+  loop set = withEmptyCache $ do
     let env' = Map.insert binding set env
     procs <- improveApprox env' proc_ formula
-    let newSet = Set.fromList procs
     case () of
       () | proc_ `elem` procs -> return True
-      () | newSet `Set.isSubsetOf` set -> return False
-      () -> loop (Set.union newSet set)
+      () | all (`elem` set) procs -> return False
+      () -> loop (foldr Set.insert set procs)
 
 verify :: MuEnv -> CCS.Process -> Mu.Formula -> StateM Bool
-verify muEnv proc_ formula = do
+verify env proc_ formula = do
+  cacheValue <- State.gets cache
+  case Map.lookup (proc_, formula) cacheValue of
+    Just b -> return b
+    Nothing -> do
+      value <- verify__raw env proc_ formula
+      State.modify $ \st -> st{cache = Map.insert (proc_, formula) value st.cache}
+      return value
+
+verify__raw :: MuEnv -> CCS.Process -> Mu.Formula -> StateM Bool
+verify__raw muEnv proc_ formula = do
   let verify_ = verify muEnv proc_
   transitions <- getTransitions proc_
   case formula of
@@ -128,6 +149,7 @@ verifyProgram definitions =
   initialState =
     State
       { defsMap = Map.fromList [(def.name, def) | def <- definitions]
+      , cache = Map.empty
       }
 
 verifyDefinitionSpecs :: CCS.Definition -> StateM [FailingSpec]
