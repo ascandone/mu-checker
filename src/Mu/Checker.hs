@@ -84,7 +84,7 @@ verify muEnv proc_ formula = do
       b <- verify_ formula'
       return $ not b
     Mu.Mu binding body -> do
-      fixPoint <- findGreatestFixpoint Set.empty $ \currentApprox ->
+      fixPoint <- findLeastFixpoint Set.empty $ \currentApprox ->
         let env' = Map.insert binding currentApprox muEnv
          in improveApprox env' proc_ body
       return $ proc_ `Set.member` fixPoint
@@ -143,9 +143,9 @@ verifyDefinitionSpecs def = do
     return ([FalsifiedFormula formula | not b])
   return $ concat vs
 
-findGreatestFixpoint :: (Eq a, Ord a) => Set a -> (Set a -> StateM (Set a)) -> StateM (Set a)
-findGreatestFixpoint initialSet getNewElems = do
+findLeastFixpoint :: (Eq a, Ord a) => Set a -> (Set a -> StateM (Set a)) -> StateM (Set a)
+findLeastFixpoint initialSet getNewElems = do
   newAdditions <- getNewElems initialSet
   if newAdditions `Set.isSubsetOf` initialSet
     then return initialSet
-    else findGreatestFixpoint (initialSet `Set.union` newAdditions) getNewElems
+    else findLeastFixpoint (initialSet `Set.union` newAdditions) getNewElems
