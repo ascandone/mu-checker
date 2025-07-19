@@ -1,7 +1,4 @@
 {-# LANGUAGE OverloadedRecordDot #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Use newtype instead of data" #-}
 
 module Mu.Checker (
   verifyProgram,
@@ -12,7 +9,6 @@ import qualified CCS.LTS as LTS
 import qualified CCS.Program as CCS
 import qualified Control.Monad
 import Control.Monad.Error.Class (liftEither)
-import qualified Control.Monad.State.Lazy as State
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Set (Set)
@@ -23,18 +19,12 @@ import qualified Parser
 
 type MuEnv = Map Text (Set CCS.Process)
 
-data State = State
-  { defsMap :: DefinitionsMap
-  }
-
-type StateM = State.StateT State (Either LTS.Err)
-
 type DefinitionsMap = Map Text CCS.Definition
 
 newtype FailingSpec
   = FalsifiedFormula Mu.Formula
 
-reachableFrom :: Map Text CCS.Definition -> CCS.Process -> Either LTS.Err [CCS.Process]
+reachableFrom :: DefinitionsMap -> CCS.Process -> Either LTS.Err [CCS.Process]
 reachableFrom defsmap proc_ = reachableFromMany Set.empty [proc_]
  where
   reachableFromMany _ [] = return []
@@ -45,32 +35,31 @@ reachableFrom defsmap proc_ = reachableFromMany Set.empty [proc_]
     rest <- reachableFromMany (Set.insert hd visitedProcs) ([p | (_, p) <- transitions] ++ tl)
     return $ hd : rest
 
-improveApprox :: MuEnv -> CCS.Process -> Mu.Formula -> StateM [CCS.Process]
-improveApprox muEnv proc_ formula = do
-  defsMap_ <- State.gets defsMap
+improveApprox :: DefinitionsMap -> MuEnv -> CCS.Process -> Mu.Formula -> Either LTS.Err [CCS.Process]
+improveApprox defsMap_ muEnv proc_ formula = do
   reachableProcs <- liftEither $ reachableFrom defsMap_ proc_
   Control.Monad.filterM
-    (\reachable -> verify muEnv reachable formula)
+    (\reachable -> verify defsMap_ muEnv reachable formula)
     reachableProcs
 
-isInLeastFixpoint :: Text -> MuEnv -> CCS.Process -> Mu.Formula -> StateM Bool
-isInLeastFixpoint binding env proc_ formula = loop Set.empty
+isInLeastFixpoint :: DefinitionsMap -> Text -> MuEnv -> CCS.Process -> Mu.Formula -> Either LTS.Err Bool
+isInLeastFixpoint defsMap_ binding env proc_ formula = loop Set.empty
  where
   loop set = do
     let env' = Map.insert binding set env
-    procs <- improveApprox env' proc_ formula
+    procs <- improveApprox defsMap_ env' proc_ formula
     let newSet = Set.fromList procs
     case () of
       () | proc_ `elem` procs -> return True
       () | newSet `Set.isSubsetOf` set -> return False
       () -> loop (Set.union newSet set)
 
-verify :: MuEnv -> CCS.Process -> Mu.Formula -> StateM Bool
-verify muEnv proc_ formula = do
-  let verify_ = verify muEnv proc_
-  transitions <- getTransitions proc_
+verify :: DefinitionsMap -> MuEnv -> CCS.Process -> Mu.Formula -> Either LTS.Err Bool
+verify defsMap_ muEnv proc_ formula = do
+  let verify_ = verify defsMap_ muEnv proc_
+  transitions <- LTS.getTransitions defsMap_ proc_
   case formula of
-    Mu.Not (Mu.Not formula') -> verify muEnv proc_ formula'
+    Mu.Not (Mu.Not formula') -> verify defsMap_ muEnv proc_ formula'
     Mu.Bottom -> return False
     Mu.And l r -> do
       l' <- verify_ l
@@ -82,7 +71,7 @@ verify muEnv proc_ formula = do
     Mu.Not formula' -> do
       b <- verify_ formula'
       return $ not b
-    Mu.Mu binding body -> isInLeastFixpoint binding muEnv proc_ body
+    Mu.Mu binding body -> isInLeastFixpoint defsMap_ binding muEnv proc_ body
     Mu.Diamond evt formula' ->
       case evt of
         Mu.EvtAnd l r -> do
@@ -94,22 +83,16 @@ verify muEnv proc_ formula = do
           return $ not b
         Mu.Up -> do
           bools <- Control.Monad.forM transitions $ \(_, lts') ->
-            verify muEnv lts' formula'
+            verify defsMap_ muEnv lts' formula'
           return $ or bools
         Mu.Evt evt' -> do
-          bools <- Control.Monad.forM transitions $ \(evt'', lts') -> case evt'' of
+          bools <- Control.Monad.forM transitions $ \(evt'', lts') -> case mapChoice evt'' of
             -- we verify again the <> formula (not formula')
-            Mu.Tau | evt' /= Mu.Tau -> verify muEnv lts' formula
-            _ -> do
-              b <- verify muEnv lts' formula'
-              return $ evt' == evt'' && b
+            Mu.Tau | evt' /= Mu.Tau -> verify defsMap_ muEnv lts' formula
+            mappedEvt -> do
+              b <- verify defsMap_ muEnv lts' formula'
+              return $ evt' == mappedEvt && b
           return $ or bools
-
-getTransitions :: CCS.Process -> StateM [(Mu.Evt, CCS.Process)]
-getTransitions proc_ = do
-  defsMap_ <- State.gets defsMap
-  transitions <- liftEither $ LTS.getTransitions defsMap_ proc_
-  return [(mapChoice evt, proc_') | (evt, proc_') <- transitions]
 
 -- TODO use the same datatype to avoid casting
 mapChoice :: Maybe CCS.Action -> Mu.Evt
@@ -121,18 +104,15 @@ mapChoice evt =
 
 verifyProgram :: CCS.Program -> [(CCS.Definition, Either LTS.Err [FailingSpec])]
 verifyProgram definitions =
-  [ (def, fst <$> State.runStateT (verifyDefinitionSpecs def) initialState)
+  [ (def, verifyDefinitionSpecs defsMap_ def)
   | def <- definitions
   ]
  where
-  initialState =
-    State
-      { defsMap = Map.fromList [(def.name, def) | def <- definitions]
-      }
+  defsMap_ = Map.fromList [(def.name, def) | def <- definitions]
 
-verifyDefinitionSpecs :: CCS.Definition -> StateM [FailingSpec]
-verifyDefinitionSpecs def = do
+verifyDefinitionSpecs :: DefinitionsMap -> CCS.Definition -> Either LTS.Err [FailingSpec]
+verifyDefinitionSpecs defsMap_ def = do
   vs <- Control.Monad.forM def.specs $ \(Parser.Ranged _ formula) -> do
-    b <- Mu.Checker.verify Map.empty def.definition formula
+    b <- Mu.Checker.verify defsMap_ Map.empty def.definition formula
     return ([FalsifiedFormula formula | not b])
   return $ concat vs
