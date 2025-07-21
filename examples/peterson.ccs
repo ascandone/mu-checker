@@ -1,0 +1,44 @@
+BoolRegT(self, t, f) =
+  self(read, t)!.BoolRegT(self, t, f) +
+  self(write, t)?.BoolRegT(self, t, f) +
+  self(write, f)?.BoolRegF(self, t, f)
+
+BoolRegF(self, t, f) =
+  self(read, f)!.BoolRegF(self, t, f) +
+  self(write, t)?.BoolRegT(self, t, f) +
+  self(write, f)?.BoolRegF(self, t, f)
+
+Proc(self, other) =
+  lock(self)?.
+  self(write, up)!.
+  turn(write, other)!.
+  ( other(read, down)?
+  + turn(read, self)?
+  ).
+  cs(self)!.unlock(self)?.
+  self(write, down)!.
+  Proc(self, other)
+
+// public interface:
+// lock(x)! to request lock for proc x
+// cs(x)? to receive ACK of lock taken from proc x
+// unlock(x)! to request unlock for proc x
+@specs <lock(left)?> <cs(left)!> <unlock(left)?> true
+// Mutex property: When we reach the left crit. section, we cannot reach the right CS
+@specs nu x. [cs(left)!] [cs(right)!] false && [true] x
+// Liveness: From any state where left requests lock, it's always possible to eventually reach left's critical section.
+@specs nu x. [true] x && [lock(left)?] (mu y. <cs(left)!> true || <true> y)
+// for every state we can reach, after we reach a critical section, we eventually unlock
+@specs nu x. [true] x && [cs(left)!] mu y. <unlock(left)?> true || <true> y
+// we can reach the crit sect
+@specs mu x . <cs(left)!> true || <true> x
+// no deadlock
+@specs nu p . <true> true && [true] p
+Main =
+  ( Proc(left, right)
+  | Proc(right, left)
+  | BoolRegF(turn, left, right)
+  | BoolRegF(left, up, down)
+  | BoolRegF(right, up, down)
+  )
+  \{turn, left, right}
