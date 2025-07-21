@@ -65,13 +65,7 @@ library
         CCS.Parser,
         CCS.LTS,
         CCS.Pretty,
-
-    -- Modules included in this library but not exported.
-    -- other-modules:
         Parser,
-
-    -- LANGUAGE extensions used by modules in this package.
-    -- other-extensions:
 
     -- Other library packages from which modules are imported.
     build-depends:

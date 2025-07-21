@@ -2,7 +2,7 @@
 
 module Mu.Checker (
   verifyProgram,
-  FailingSpec (..),
+  Check (..),
 ) where
 
 import qualified CCS.LTS as LTS
@@ -33,8 +33,10 @@ type StateM = State.StateT State (Either LTS.Err)
 
 type DefinitionsMap = Map Text CCS.Definition
 
-newtype FailingSpec
-  = FalsifiedFormula Mu.Formula
+data Check
+  = Pass
+  | FalsifiedFormula Parser.Range Mu.Formula
+  deriving (Show)
 
 -- | All the new states reachable from this state that satisfy the formula (given this approx)
 improveApprox :: MuEnv -> CCS.Process -> Mu.Formula -> StateM (Set CCS.Process)
@@ -124,7 +126,7 @@ mapChoice evt =
     Just (CCS.Action CCS.Rcv e args) -> Mu.Rcv e args
     Just (CCS.Action CCS.Snd e args) -> Mu.Snd e args
 
-verifyProgram :: CCS.Program -> [(CCS.Definition, Either LTS.Err [FailingSpec])]
+verifyProgram :: CCS.Program -> [(CCS.Definition, Either LTS.Err [Check])]
 verifyProgram definitions =
   [ (def, fst <$> State.runStateT (verifyDefinitionSpecs def) initialState)
   | def <- definitions
@@ -136,12 +138,14 @@ verifyProgram definitions =
       , approxCache = Map.empty
       }
 
-verifyDefinitionSpecs :: CCS.Definition -> StateM [FailingSpec]
+verifyDefinitionSpecs :: CCS.Definition -> StateM [Check]
 verifyDefinitionSpecs def = do
-  vs <- Control.Monad.forM def.specs $ \(Parser.Ranged _ formula) -> do
-    b <- Mu.Checker.verify Map.empty def.definition formula
-    return ([FalsifiedFormula formula | not b])
-  return $ concat vs
+  Control.Monad.forM def.specs $ \(Parser.Ranged rng formula) -> do
+    pass <- Mu.Checker.verify Map.empty def.definition formula
+    return $
+      if pass
+        then Pass
+        else FalsifiedFormula rng formula
 
 findLeastFixpoint :: (Eq a, Ord a) => Set a -> (Set a -> StateM (Set a)) -> StateM (Set a)
 findLeastFixpoint initialSet getNewElems = do
